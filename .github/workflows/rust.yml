@@ -1,0 +1,43 @@
+name: Run Rust build / clippy / tests
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  rust-build:
+    name: Run Rust build / clippy / tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@16499b5e05bf2e26879000db0c1d13f7e13fa3af
+        with:
+          toolchain: stable
+          components: clippy
+          override: true
+          
+      - name: Run cargo build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --verbose
+
+      - name: Run rust-clippy
+        uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{ github.token }}
+          args: --all-targets --all-features
+
+      - name: Run tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --verbose
+        
+      - name: Compute minimum supported Rust version
+        uses: spenserblack/actions-msrv@v0.4.1
