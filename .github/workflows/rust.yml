@@ -33,6 +33,3 @@ jobs:
           
       - name: Run build
         run: cargo build --release
-        
-      - name: Compute minimum supported Rust version
-        uses: spenserblack/actions-msrv@v0.4.1
