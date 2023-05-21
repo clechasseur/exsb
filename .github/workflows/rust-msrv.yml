@@ -22,12 +22,12 @@ jobs:
         id: get-msrv
 
       - name: Output minimum supported Rust version
-        run: 'echo "::notice MSRV is ${{ steps.get-msrv.outputs.msrv }}"'
+        run: 'echo "::notice file=Cargo.toml::MSRV is ${{ steps.get-msrv.outputs.msrv }}"'
 
       - name: Make sure minimum supported Rust version matches that specified in Cargo.toml
         run: |
           CARGO_METADATA=$(cargo metadata --no-deps --format-version 1 --all-features --locked)
           MISMATCH=$(jq '[.packages | .[] | .rust_version | select(. != "${{ steps.get-msrv.outputs.msrv }}")]' <<< "$CARGO_METADATA")
-          if [[ "$MISMATCH" != "[]" ]]
+          if [[ "$MISMATCH" != "[]" ]]; then
             echo "::error MSRV is ${{ steps.get-msrv.outputs.msrv }}, but found some mismatch in Cargo.toml: $MISMATCH"
           fi
