@@ -14,9 +14,14 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Compute minimum supported Rust version
         uses: spenserblack/actions-msrv@v0.4.1
         id: get-msrv
 
-      - name: Output minimum supported Rust version
-        run: 'echo "MSRV is ${{ steps.get-msrv.outputs.msrv }}"'
+      - name: Make sure minimum supported Rust version matches that specified in Cargo.toml
+        run: |
+          MISMATCH=(cargo metadata --no-deps --format-version 1 --all-features --locked | jq '[.packages | .[] | .rust_version | select(. != "${{ steps.get-msrv.outputs.msrv }}")]')
+          [[ "$MISMATCH" != "[]" ]] && exit 1
