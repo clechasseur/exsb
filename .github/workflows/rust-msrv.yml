@@ -29,5 +29,5 @@ jobs:
           CARGO_METADATA=$(cargo metadata --no-deps --format-version 1 --all-features --locked)
           MISMATCH=$(jq '[.packages | .[] | .rust_version | select(. != "${{ steps.get-msrv.outputs.msrv }}")]' <<< "$CARGO_METADATA")
           if [[ "$MISMATCH" != "[]" ]]; then
-            echo "::error MSRV is ${{ steps.get-msrv.outputs.msrv }}, but found some mismatch in Cargo.toml: $MISMATCH"
+            echo "::error file=Cargo.toml::MSRV is ${{ steps.get-msrv.outputs.msrv }}, but found some mismatch: $MISMATCH"
           fi
