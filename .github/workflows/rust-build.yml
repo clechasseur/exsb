@@ -8,15 +8,21 @@ on:
 
 jobs:
   rust-build:
-    name: Rust build
-    runs-on: ubuntu-latest
+    name: Rust build for Rust ${{ matrix.toolchain }} on ${{ matrix.os }}
+    strategy:
+      matrix:
+        toolchain: [ 1.56.1, stable, beta, nightly ]
+        os: [ ubuntu, macos, windows ]
+    runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Install clippy
-        run: rustup component add clippy
-          
+      - name: Install Rust toolchain ${{ matrix.toolchain }} with clippy
+        uses: dtolnay/rust-toolchain@${{ matrix.toolchain }}
+        with:
+          components: clippy
+
       - name: Output Rust toolchain info
         run: |
           cargo --version --verbose
@@ -30,6 +36,6 @@ jobs:
         run: |
           cargo check
           cargo test --all
-          
+
       - name: Run build
         run: cargo build --release
