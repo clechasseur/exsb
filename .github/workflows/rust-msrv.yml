@@ -1,4 +1,4 @@
-name: Compute minimum supported Rust version for this project
+name: Rust MSRV
 
 on:
   push:
@@ -21,7 +21,13 @@ jobs:
         uses: spenserblack/actions-msrv@v0.4.1
         id: get-msrv
 
+      - name: Output minimum supported Rust version
+        run: 'echo "::notice MSRV is ${{ steps.get-msrv.outputs.msrv }}"'
+
       - name: Make sure minimum supported Rust version matches that specified in Cargo.toml
         run: |
-          MISMATCH=(cargo metadata --no-deps --format-version 1 --all-features --locked | jq '[.packages | .[] | .rust_version | select(. != "${{ steps.get-msrv.outputs.msrv }}")]')
-          [[ "$MISMATCH" != "[]" ]] && exit 1
+          CARGO_METADATA=$(cargo metadata --no-deps --format-version 1 --all-features --locked)
+          MISMATCH=$(jq '[.packages | .[] | .rust_version | select(. != "${{ steps.get-msrv.outputs.msrv }}")]' <<< "$CARGO_METADATA")
+          if [[ "$MISMATCH" != "[]" ]]
+            echo "::error MSRV is ${{ steps.get-msrv.outputs.msrv }}, but found some mismatch in Cargo.toml: $MISMATCH"
+          fi
