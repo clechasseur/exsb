@@ -17,17 +17,23 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Install cargo-msrv
+        run: cargo install cargo-msrv
+
       - name: Compute minimum supported Rust version
-        uses: spenserblack/actions-msrv@v0.4.1
-        id: get-msrv
+        id: msrv
+        run: |
+          MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --workspace --all-targets --all-features --ignore-rust-version | tail -1)
+          MSRV=$(echo $MSRV_RESULT | jq -r '.msrv')
+          echo "msrv=$MSRV" >> $GITHUB_OUTPUT
 
       - name: Output minimum supported Rust version
-        run: 'echo "::notice file=Cargo.toml::MSRV is ${{ steps.get-msrv.outputs.msrv }}"'
+        run: 'echo "::notice file=Cargo.toml::MSRV is ${{ steps.msrv.outputs.msrv }}"'
 
       - name: Make sure minimum supported Rust version matches that specified in Cargo.toml
         run: |
           CARGO_METADATA=$(cargo metadata --no-deps --format-version 1 --all-features --locked)
-          MISMATCH=$(jq '[.packages | .[] | .rust_version | select(. != "${{ steps.get-msrv.outputs.msrv }}")]' <<< "$CARGO_METADATA")
+          MISMATCH=$(jq '[.packages | .[] | .rust_version | select(. != "${{ steps.msrv.outputs.msrv }}")]' --compact-output <<< "$CARGO_METADATA")
           if [[ "$MISMATCH" != "[]" ]]; then
-            echo "::error file=Cargo.toml::MSRV is ${{ steps.get-msrv.outputs.msrv }}, but found some mismatch: $MISMATCH"
+            echo "::error file=Cargo.toml::MSRV is ${{ steps.msrv.outputs.msrv }}, but found some mismatch: $MISMATCH"
           fi
