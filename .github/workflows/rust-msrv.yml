@@ -36,4 +36,5 @@ jobs:
           MISMATCH=$(jq '[.packages | .[] | .rust_version | select(. != "${{ steps.msrv.outputs.msrv }}")]' --compact-output <<< "$CARGO_METADATA")
           if [[ "$MISMATCH" != "[]" ]]; then
             echo "::error file=Cargo.toml::MSRV is ${{ steps.msrv.outputs.msrv }}, but found some mismatch: $MISMATCH"
+            exit 1
           fi
