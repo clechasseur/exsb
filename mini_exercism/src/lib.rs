@@ -1,14 +1,10 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+//! # mini_exercism
+//!
+//! A lightweight crate to interact with Exercism's website API.
 
 #[cfg(test)]
-mod tests {
-    use super::*;
+#[macro_use]
+extern crate assert_matches;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+pub mod core;
+pub mod cli;
