@@ -47,21 +47,27 @@ mod os {
             Some(path.to_str()?.to_string())
         }
 
-        #[cfg(all(test, target_os = "windows"))]
+        #[cfg(test)]
         mod tests {
             use std::env;
+            use std::path::MAIN_SEPARATOR;
+            use assert_matches::assert_matches;
+            use serial_test::serial;
             use super::*;
 
             #[test]
+            #[serial]
             fn test_config_dir_valid() {
                 let app_data = "C:\\Users\\some_user\\AppData\\Roaming";
                 env::set_var("APPDATA", app_data);
                 let config_dir = get_cli_config_dir();
 
-                assert_matches!(config_dir, Some(dir) if dir == app_data.to_string() + "\\exercism");
+                assert_matches!(config_dir,
+                    Some(dir) if dir == format!("{}{}{}", app_data, MAIN_SEPARATOR, "exercism"));
             }
 
             #[test]
+            #[serial]
             fn test_config_dir_invalid() {
                 env::remove_var("APPDATA");
                 let config_dir = get_cli_config_dir();
@@ -93,11 +99,15 @@ mod os {
             Some(path.to_str()?.to_string())
         }
 
-        #[cfg(all(test, not(target_os = "windows")))]
+        #[cfg(test)]
         mod tests {
+            use std::path::MAIN_SEPARATOR;
+            use assert_matches::assert_matches;
+            use serial_test::serial;
             use super::*;
 
             #[test]
+            #[serial]
             fn test_config_dir_from_exercism_config_home() {
                 let exercism_config_home = "/some/config/home";
                 env::set_var("EXERCISM_CONFIG_HOME", exercism_config_home);
@@ -107,16 +117,19 @@ mod os {
             }
 
             #[test]
+            #[serial]
             fn test_config_dir_from_xdg_config_home() {
                 let xdg_config_home = "/some/config/home";
                 env::remove_var("EXERCISM_CONFIG_HOME");
                 env::set_var("XDG_CONFIG_HOME", xdg_config_home);
                 let config_dir = get_cli_config_dir();
 
-                assert_matches!(config_dir, Some(dir) if dir == xdg_config_home.to_string() + "/exercism");
+                assert_matches!(config_dir,
+                    Some(dir) if dir == format!("{}{}{}", xdg_config_home, MAIN_SEPARATOR, "exercism"));
             }
 
             #[test]
+            #[serial]
             fn test_config_dir_from_home() {
                 let home = "/some/home";
                 env::remove_var("EXERCISM_CONFIG_HOME");
@@ -124,7 +137,19 @@ mod os {
                 env::set_var("HOME", home);
                 let config_dir = get_cli_config_dir();
 
-                assert_matches!(config_dir, Some(dir) if dir == home.to_string() + "/.config/exercism");
+                assert_matches!(config_dir,
+                    Some(dir) if dir == format!("{}{}{}{}{}", home, MAIN_SEPARATOR, ".config", MAIN_SEPARATOR, "exercism"));
+            }
+
+            #[test]
+            #[serial]
+            fn test_config_dir_invalid() {
+                env::remove_var("EXERCISM_CONFIG_HOME");
+                env::remove_var("XDG_CONFIG_HOME");
+                env::remove_var("HOME");
+                let config_dir = get_cli_config_dir();
+
+                assert_matches!(config_dir, None);
             }
         }
     }

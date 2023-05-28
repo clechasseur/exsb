@@ -23,43 +23,11 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Error type used by the mini_exercism library.
 #[derive(Debug, Error)]
-#[error(transparent)]
-pub struct Error(ErrorImpl);
-
-impl<T> From<T> for Error
-where
-    T: Into<ErrorImpl>
-{
-    fn from(value: T) -> Self {
-        Self(value.into())
-    }
-}
-
-#[derive(Debug, Error)]
-enum ErrorImpl {
+#[non_exhaustive]
+pub enum Error {
     #[error("Could not read Exercism CLI config file: {0:?}")]
     ConfigReadError(#[from] io::Error),
 
     #[error("Failed to parse Exercism CLI config file: {0:?}")]
     ConfigParseError(#[from] serde_json::Error),
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_error_from_io_error() {
-        let error: Error = io::Error::from(io::ErrorKind::NotFound).into();
-
-        assert_matches!(error.0, ErrorImpl::ConfigReadError(_));
-    }
-
-    #[test]
-    fn test_error_from_json_error() {
-        let invalid_json = "{hello: world}";
-        let error: Error = serde_json::from_str::<serde_json::Value>(invalid_json).unwrap_err().into();
-
-        assert_matches!(error.0, ErrorImpl::ConfigParseError(_));
-    }
 }
