@@ -10,6 +10,7 @@ jobs:
   rust-build:
     name: Rust build for Rust ${{ matrix.toolchain }} on ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         toolchain: [ 1.56.1, stable, beta, nightly ]
         os: [ ubuntu, macos, windows ]
