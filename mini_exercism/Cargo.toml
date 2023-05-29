@@ -2,7 +2,7 @@
 name = "mini_exercism"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.56.1"
+rust-version = "1.68.2"
 
 [dependencies]
 serde_json = "1.0.96"
@@ -10,4 +10,4 @@ thiserror = "1.0.40"
 
 [dev-dependencies]
 assert_matches = "1.5.0"
-serial_test = "1.0.0"
+serial_test = "2.0.0"
