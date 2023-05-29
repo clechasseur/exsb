@@ -2,9 +2,11 @@
 name = "mini_exercism"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.68.2"
+rust-version = "1.59.0"
 
 [dependencies]
+futures = "0.3.28"
+reqwest = { version = "0.11.18", features = ["json"] }
 serde_json = "1.0.96"
 thiserror = "1.0.40"
 
