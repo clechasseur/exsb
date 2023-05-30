@@ -22,6 +22,7 @@ jobs:
 
       - name: Compute minimum supported Rust version
         id: msrv
+        # TODO: remove Cargo.lock before running cargo msrv so that dependencies are floating
         run: |
           MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --workspace --all-targets --all-features --ignore-rust-version | tail -1)
           MSRV=$(echo $MSRV_RESULT | jq -r '.msrv')

@@ -1,3 +1,5 @@
+//! Utilities to interact with the Exercism CLI application.
+
 use std::{env, fs, io};
 use std::path::PathBuf;
 use crate::core::{Credentials, Result};

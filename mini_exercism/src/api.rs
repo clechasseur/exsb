@@ -1,3 +1,5 @@
+//! Types and functions to interact with the Exercism APIs.
+
 use reqwest::{Client, IntoUrl, Method, RequestBuilder};
 use crate::core::Credentials;
 

@@ -1,3 +1,5 @@
+//! Core types used across the mini_exercism library.
+
 use std::io;
 use thiserror::Error;
 
