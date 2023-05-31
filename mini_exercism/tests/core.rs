@@ -1,32 +1,18 @@
-mod credentials {
-    use mini_exercism::core::Credentials;
+use std::io;
+use assert_matches::assert_matches;
+use mini_exercism::core::Error;
 
-    #[test]
-    fn test_credentials_from_api_token() {
-        let api_token = "some_token";
-        let credentials = Credentials::from_api_token(api_token.to_string());
+#[test]
+fn test_config_read_error_from() {
+    let error: Error = io::Error::from(io::ErrorKind::NotFound).into();
 
-        assert_eq!(credentials.api_token(), api_token);
-    }
+    assert_matches!(error, Error::ConfigReadError(_));
 }
 
-mod error {
-    use std::io;
-    use assert_matches::assert_matches;
-    use mini_exercism::core::Error;
+#[test]
+fn test_config_parse_error_from() {
+    let invalid_json = "{hello: world}";
+    let error: Error = serde_json::from_str::<serde_json::Value>(invalid_json).unwrap_err().into();
 
-    #[test]
-    fn test_config_read_error_from() {
-        let error: Error = io::Error::from(io::ErrorKind::NotFound).into();
-
-        assert_matches!(error, Error::ConfigReadError(_));
-    }
-
-    #[test]
-    fn test_config_parse_error_from() {
-        let invalid_json = "{hello: world}";
-        let error: Error = serde_json::from_str::<serde_json::Value>(invalid_json).unwrap_err().into();
-
-        assert_matches!(error, Error::ConfigParseError(_));
-    }
+    assert_matches!(error, Error::ConfigParseError(_));
 }
