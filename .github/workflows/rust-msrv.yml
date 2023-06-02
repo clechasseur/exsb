@@ -24,7 +24,8 @@ jobs:
         run: |
           CARGO_METADATA=$(cargo metadata --no-deps --format-version 1 --locked)
           PACKAGES=$(jq '[.packages | .[] | .name]' --compact-output <<< "$CARGO_METADATA")
-          echo "packages=$PACKAGES" >> $GITHUB_OUTPUT
+          ESCAPED_PACKAGES=$(sed 's/"/\\"/g' <<< "$PACKAGES")
+          echo "packages=$ESCAPED_PACKAGES" >> $GITHUB_OUTPUT
 
       - name: Output list of packages
         run: 'echo "::notice file=Cargo.toml::List of packages: ${{ steps.save-packages.outputs.packages }}"'
