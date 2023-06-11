@@ -56,7 +56,7 @@ jobs:
 
       - name: Install cargo-msrv
         run: |
-          cargo-binstall --pkg-fmt="tar" cargo-msrv
+          cargo binstall --no-confirm --no-symlinks cargo-msrv
 
       - name: Compute minimum supported Rust version for package ${{ matrix.package }}
         id: msrv
