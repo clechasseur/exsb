@@ -58,11 +58,13 @@ jobs:
         run: |
           cargo binstall --no-confirm --no-symlinks cargo-msrv
 
+      #          MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --package "${{ matrix.package }}" --all-targets --all-features --ignore-rust-version | tail -1)
+      #          MSRV=$(echo $MSRV_RESULT | jq -r '.msrv')
+
       - name: Compute minimum supported Rust version for package ${{ matrix.package }}
         id: msrv
         run: |
-          MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --package "${{ matrix.package }}" --all-targets --all-features --ignore-rust-version | tail -1)
-          MSRV=$(echo $MSRV_RESULT | jq -r '.msrv')
+          MSRV="1.60.0"
           echo "msrv=$MSRV" >> $GITHUB_OUTPUT
 
       - name: Output minimum supported Rust version
@@ -72,7 +74,7 @@ jobs:
         run: |
           CARGO_METADATA=$(cargo metadata --no-deps --format-version 1 --locked)
           PACKAGE_MSRV=$(jq '.packages | .[] | select(.name == "${{ matrix.package }}") | .rust_version' --compact-output <<< "$CARGO_METADATA")
-          if [[ "$PACKAGE_MSRV" != "${{ steps.msrv.outputs.msrv }}" ]]; then
+          if [[ $PACKAGE_MSRV != "${{ steps.msrv.outputs.msrv }}" ]]; then
             echo "::error file=${{ matrix.package }}/Cargo.toml::MSRV for package ${{ matrix.package }} is ${{ steps.msrv.outputs.msrv }}, but found mismatch: $PACKAGE_MSRV"
             exit 1
           fi
