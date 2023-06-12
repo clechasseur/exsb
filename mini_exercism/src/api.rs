@@ -1,9 +1,9 @@
 //! Types and functions to interact with the Exercism APIs.
 
+pub mod website;
+
 use reqwest::{Client, IntoUrl, Method, RequestBuilder};
 use crate::core::Credentials;
-
-pub mod website;
 
 /// Client class used to query the Exercism APIs.
 pub struct ApiClient {
@@ -30,7 +30,7 @@ impl ApiClient {
         self.credentials.as_ref()
     }
 
-    /// Creates a RequestBuilder used to send a request to an Exercism API.
+    /// Creates a `RequestBuilder` used to send a request to an Exercism API.
     /// Takes care of setting the authorization headers using the credentials
     /// provided to the constructor, if any.
     pub fn request<U: IntoUrl>(&self, method: Method, url: U) -> RequestBuilder {
