@@ -2,24 +2,22 @@
 
 mod detail;
 
-use std::{env, fs, io};
-use std::path::PathBuf;
-use crate::cli::detail::{CliConfig, get_cli_config_dir};
-use crate::core::{Credentials, Error, Result};
+use crate::cli::detail::DefaultCliCredentialsHelper;
+use crate::core::{Credentials, Result};
 
 /// Reads API credentials from the CLI config file and returns them.
+///
+/// # Errors
+///
+/// - [`ConfigNotFound`]: CLI config file cannot be found, maybe CLI is not installed
+/// - [`ConfigReadError`]: I/O error reading the config file
+/// - [`ConfigParseError`]: Config file JSON could not be parsed
+/// - [`ApiTokenNotFoundInConfig`]: Config file did not contain an API token
+///
+/// [`ConfigNotFound`]: crate::core::Error#variant.ConfigNotFound
+/// [`ConfigReadError`]: crate::core::Error#variant.ConfigReadError
+/// [`ConfigParseError`]: crate::core::Error#variant.ConfigParseError
+/// [`ApiTokenNotFoundInConfig`]: crate::core::Error#variant.ApiTokenNotFoundInConfig
 pub fn get_cli_credentials() -> Result<Credentials> {
-    let config_dir = get_cli_config_dir()
-        .ok_or_else(|| io::Error::from(io::ErrorKind::NotFound))
-        .or_else(|_| env::current_dir().map(|path| path.to_string_lossy().to_string()))?;
-
-    let config_file_path: PathBuf = [config_dir, "user.json".to_string()].iter().collect();
-    match fs::read_to_string(config_file_path) {
-        Ok(config) => {
-            let config = CliConfig::from_string(config.as_str())?;
-            Ok(Credentials::from_api_token(config.api_token))
-        },
-        Err(err) if err.kind() == io::ErrorKind::NotFound => Err(Error::ConfigNotFound),
-        Err(err) => Err(Error::from(err)),
-    }
+    detail::get_cli_credentials(&DefaultCliCredentialsHelper{})
 }

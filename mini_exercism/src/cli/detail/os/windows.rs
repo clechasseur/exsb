@@ -20,7 +20,7 @@ mod tests {
     #[test]
     #[serial]
     fn test_config_dir_valid() {
-        let app_data = "C:\\Users\\some_user\\AppData\\Roaming";
+        let app_data = r"C:\Users\some_user\AppData\Roaming";
         env::set_var("APPDATA", app_data);
         let config_dir = get_cli_config_dir();
 

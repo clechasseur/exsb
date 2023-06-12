@@ -12,4 +12,5 @@ thiserror = "1.0.40"
 
 [dev-dependencies]
 assert_matches = "1.5.0"
+mockall = "0.11.4"
 serial_test = "2.0.0"
