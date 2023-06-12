@@ -58,10 +58,15 @@ jobs:
         run: |
           cargo binstall --no-confirm --no-symlinks cargo-msrv
 
+      - name: Install toml-cli
+        run: |
+          pip3 install toml-cli
+
       - name: Compute minimum supported Rust version for package ${{ matrix.package }}
         id: msrv
         run: |
-          MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --package "${{ matrix.package }}" --all-targets --all-features --ignore-rust-version | tail -1)
+          toml unset --toml-path ${{ matrix.package }}/Cargo.toml package.rust-version
+          MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --package "${{ matrix.package }}" --all-targets --all-features | tail -1)
           MSRV=$(echo $MSRV_RESULT | jq -r '.msrv')
           echo "msrv=$MSRV" >> $GITHUB_OUTPUT
 
