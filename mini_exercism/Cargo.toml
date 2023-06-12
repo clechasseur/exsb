@@ -2,7 +2,7 @@
 name = "mini_exercism"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.60.0"
+rust-version = "1.68.2"
 
 [dependencies]
 futures = "0.3.28"
