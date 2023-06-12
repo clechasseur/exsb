@@ -65,10 +65,12 @@ jobs:
       - name: Compute minimum supported Rust version for package ${{ matrix.package }}
         id: msrv
         run: |
+          cp ${{ matrix.package }}/Cargo.toml ${{ matrix.package }}/Cargo.toml.bak
           toml unset --toml-path ${{ matrix.package }}/Cargo.toml package.rust-version
           MSRV_RESULT=$(cargo msrv --output-format json -- cargo check --package "${{ matrix.package }}" --all-targets --all-features | tail -1)
           MSRV=$(echo $MSRV_RESULT | jq -r '.msrv')
           echo "msrv=$MSRV" >> $GITHUB_OUTPUT
+          mv -f ${{ matrix.package }}/Cargo.toml.bak ${{ matrix.package }}/Cargo.toml
 
       - name: Output minimum supported Rust version
         run: 'echo "::notice file=${{ matrix.package }}/Cargo.toml::MSRV for package ${{ matrix.package }} is ${{ steps.msrv.outputs.msrv }}"'
