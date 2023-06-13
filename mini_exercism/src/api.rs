@@ -2,26 +2,26 @@
 
 pub mod website;
 
-use reqwest::{Client, IntoUrl, Method, RequestBuilder};
+use reqwest::{IntoUrl, Method};
 use crate::core::Credentials;
 
 /// Client class used to query the Exercism APIs.
-pub struct ApiClient {
-    client: Client,
+pub struct Client {
+    http_client: reqwest::Client,
     credentials: Option<Credentials>,
 }
 
-impl ApiClient {
-    /// Creates an Exercism API client from a default [reqwest::Client](Client) and [credentials](Credentials).
+impl Client {
+    /// Creates an Exercism API client from a default [reqwest::Client] and [credentials](Credentials).
     /// If credentials are not specified, the Exercism API will be queried publicly.
-    pub fn with_default_client(credentials: Option<Credentials>) -> Self {
-        Self::with_custom_client(Client::new(), credentials)
+    pub fn with_default_http_client(credentials: Option<Credentials>) -> Self {
+        Self::with_custom_http_client(reqwest::Client::new(), credentials)
     }
 
-    /// Creates an Exercism API client from the given [reqwest::Client](Client) and [credentials](Credentials).
+    /// Creates an Exercism API client from the given [reqwest::Client] and [credentials](Credentials).
     /// If credentials are not specified, the Exercism API will be queried publicly.
-    pub fn with_custom_client(client: Client, credentials: Option<Credentials>) -> Self {
-        Self { client, credentials }
+    pub fn with_custom_http_client(http_client: reqwest::Client, credentials: Option<Credentials>) -> Self {
+        Self { http_client, credentials }
     }
 
     /// Accesses the credentials used to access the Exercism API.
@@ -30,11 +30,11 @@ impl ApiClient {
         self.credentials.as_ref()
     }
 
-    /// Creates a [RequestBuilder] used to send a request to an Exercism API.
+    /// Creates a [reqwest::RequestBuilder] used to send a request to an Exercism API.
     /// Takes care of setting the authorization headers using the credentials
     /// provided to the constructor, if any.
-    pub fn request<U: IntoUrl>(&self, method: Method, url: U) -> RequestBuilder {
-        let builder = self.client.request(method, url);
+    pub fn request<U: IntoUrl>(&self, method: Method, url: U) -> reqwest::RequestBuilder {
+        let builder = self.http_client.request(method, url);
         match &self.credentials {
             Some(creds) => builder.bearer_auth(creds.api_token()),
             None => builder,

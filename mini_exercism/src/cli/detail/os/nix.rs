@@ -24,51 +24,55 @@ pub fn get_cli_config_dir() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::path::MAIN_SEPARATOR;
-    use serial_test::serial;
     use super::*;
 
-    #[test]
-    #[serial]
-    fn test_config_dir_from_exercism_config_home() {
-        let exercism_config_home = "/some/config/home";
-        env::set_var("EXERCISM_CONFIG_HOME", exercism_config_home);
-        let config_dir = get_cli_config_dir();
+    mod get_cli_config_dir {
+        use std::path::MAIN_SEPARATOR;
+        use serial_test::serial;
+        use super::*;
 
-        assert_eq!(config_dir, Some(exercism_config_home.to_string()));
-    }
+        #[test]
+        #[serial]
+        fn test_from_exercism_config_home() {
+            let exercism_config_home = "/some/config/home";
+            env::set_var("EXERCISM_CONFIG_HOME", exercism_config_home);
+            let config_dir = get_cli_config_dir();
 
-    #[test]
-    #[serial]
-    fn test_config_dir_from_xdg_config_home() {
-        let xdg_config_home = "/some/config/home";
-        env::remove_var("EXERCISM_CONFIG_HOME");
-        env::set_var("XDG_CONFIG_HOME", xdg_config_home);
-        let config_dir = get_cli_config_dir();
+            assert_eq!(config_dir, Some(exercism_config_home.to_string()));
+        }
 
-        assert_eq!(config_dir, Some(format!("{}{}{}", xdg_config_home, MAIN_SEPARATOR, "exercism")));
-    }
+        #[test]
+        #[serial]
+        fn test_from_xdg_config_home() {
+            let xdg_config_home = "/some/config/home";
+            env::remove_var("EXERCISM_CONFIG_HOME");
+            env::set_var("XDG_CONFIG_HOME", xdg_config_home);
+            let config_dir = get_cli_config_dir();
 
-    #[test]
-    #[serial]
-    fn test_config_dir_from_home() {
-        let home = "/some/home";
-        env::remove_var("EXERCISM_CONFIG_HOME");
-        env::remove_var("XDG_CONFIG_HOME");
-        env::set_var("HOME", home);
-        let config_dir = get_cli_config_dir();
+            assert_eq!(config_dir, Some(format!("{}{}{}", xdg_config_home, MAIN_SEPARATOR, "exercism")));
+        }
 
-        assert_eq!(config_dir, Some(format!("{}{}{}{}{}", home, MAIN_SEPARATOR, ".config", MAIN_SEPARATOR, "exercism")));
-    }
+        #[test]
+        #[serial]
+        fn test_from_home() {
+            let home = "/some/home";
+            env::remove_var("EXERCISM_CONFIG_HOME");
+            env::remove_var("XDG_CONFIG_HOME");
+            env::set_var("HOME", home);
+            let config_dir = get_cli_config_dir();
 
-    #[test]
-    #[serial]
-    fn test_config_dir_invalid() {
-        env::remove_var("EXERCISM_CONFIG_HOME");
-        env::remove_var("XDG_CONFIG_HOME");
-        env::remove_var("HOME");
-        let config_dir = get_cli_config_dir();
+            assert_eq!(config_dir, Some(format!("{}{}{}{}{}", home, MAIN_SEPARATOR, ".config", MAIN_SEPARATOR, "exercism")));
+        }
 
-        assert_eq!(config_dir, None);
+        #[test]
+        #[serial]
+        fn test_invalid() {
+            env::remove_var("EXERCISM_CONFIG_HOME");
+            env::remove_var("XDG_CONFIG_HOME");
+            env::remove_var("HOME");
+            let config_dir = get_cli_config_dir();
+
+            assert_eq!(config_dir, None);
+        }
     }
 }

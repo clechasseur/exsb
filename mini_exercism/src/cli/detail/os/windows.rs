@@ -12,27 +12,31 @@ pub fn get_cli_config_dir() -> Option<String> {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
-    use std::path::MAIN_SEPARATOR;
-    use serial_test::serial;
     use super::*;
 
-    #[test]
-    #[serial]
-    fn test_config_dir_valid() {
-        let app_data = r"C:\Users\some_user\AppData\Roaming";
-        env::set_var("APPDATA", app_data);
-        let config_dir = get_cli_config_dir();
+    mod get_cli_config_dir {
+        use std::env;
+        use std::path::MAIN_SEPARATOR;
+        use serial_test::serial;
+        use super::*;
 
-        assert_eq!(config_dir, Some(format!("{}{}{}", app_data, MAIN_SEPARATOR, "exercism")));
-    }
+        #[test]
+        #[serial]
+        fn test_valid() {
+            let app_data = r"C:\Users\some_user\AppData\Roaming";
+            env::set_var("APPDATA", app_data);
+            let config_dir = get_cli_config_dir();
 
-    #[test]
-    #[serial]
-    fn test_config_dir_invalid() {
-        env::remove_var("APPDATA");
-        let config_dir = get_cli_config_dir();
+            assert_eq!(config_dir, Some(format!("{}{}{}", app_data, MAIN_SEPARATOR, "exercism")));
+        }
 
-        assert_eq!(config_dir, None);
+        #[test]
+        #[serial]
+        fn test_invalid() {
+            env::remove_var("APPDATA");
+            let config_dir = get_cli_config_dir();
+
+            assert_eq!(config_dir, None);
+        }
     }
 }
