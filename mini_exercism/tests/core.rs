@@ -4,8 +4,8 @@ mod credentials {
     #[test]
     fn test_eq() {
         let api_token = "some_token";
-        let credentials = Credentials::from_api_token(api_token.to_string());
-        let expected = Credentials::from_api_token(api_token.to_string());
+        let credentials = Credentials::from_api_token(api_token);
+        let expected = Credentials::from_api_token(api_token);
 
         assert_eq!(credentials, expected);
     }
@@ -13,8 +13,8 @@ mod credentials {
     #[test]
     fn test_ne() {
         let api_token = "some_token";
-        let credentials = Credentials::from_api_token(api_token.to_string());
-        let not_expected = Credentials::from_api_token("some_other_token".to_string());
+        let credentials = Credentials::from_api_token(api_token);
+        let not_expected = Credentials::from_api_token("some_other_token");
 
         assert_ne!(credentials, not_expected);
     }

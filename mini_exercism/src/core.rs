@@ -11,7 +11,7 @@ use thiserror::Error;
 /// use mini_exercism::core::Credentials;
 ///
 /// let api_token = "some_token";
-/// let credentials = Credentials::from_api_token(api_token.to_string());
+/// let credentials = Credentials::from_api_token(api_token);
 ///
 /// assert_eq!(credentials.api_token(), api_token);
 /// ```
@@ -22,8 +22,8 @@ pub struct Credentials {
 
 impl Credentials {
     /// Creates a new Exercism credentials wrapper from the given API token.
-    pub fn from_api_token(api_token: String) -> Self {
-        Self { api_token }
+    pub fn from_api_token<T: Into<String>>(api_token: T) -> Self {
+        Self { api_token: api_token.into() }
     }
 
     /// Accesses the Exercism API token.
