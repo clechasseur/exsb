@@ -15,40 +15,34 @@ mod client {
     const AUTHENTICATED_API_PATH: &str = "/authenticated";
     const TEST_API_PATH: &str = "/test";
 
+    async fn setup_route<T: Into<String>>(mock_server: &MockServer, route: T, anonymous: bool, test: bool) {
+        let mut mock = Mock::given(method("GET"))
+            .and(path(route));
+
+        if anonymous {
+            mock = mock.and(not(header_exists("authorization")));
+        } else {
+            mock = mock.and(bearer_token(API_TOKEN));
+        }
+
+        if test {
+            mock = mock.and(header_exists(TEST_HEADER));
+        } else {
+            mock = mock.and(not(header_exists(TEST_HEADER)));
+        }
+
+        mock.respond_with(ResponseTemplate::new(StatusCode::OK))
+            .mount(mock_server)
+            .await;
+    }
+
     async fn setup_mock_server() -> MockServer {
         let mock_server = MockServer::start().await;
 
-        Mock::given(method("GET"))
-            .and(path(ANONYMOUS_API_PATH))
-            .and(not(header_exists("authorization")))
-            .and(not(header_exists(TEST_HEADER)))
-            .respond_with(ResponseTemplate::new(StatusCode::OK))
-            .mount(&mock_server)
-            .await;
-
-        Mock::given(method("GET"))
-            .and(path(format!("{}{}", ANONYMOUS_API_PATH, TEST_API_PATH)))
-            .and(not(header_exists("authorization")))
-            .and(header_exists(TEST_HEADER))
-            .respond_with(ResponseTemplate::new(StatusCode::OK))
-            .mount(&mock_server)
-            .await;
-
-        Mock::given(method("GET"))
-            .and(path(AUTHENTICATED_API_PATH))
-            .and(bearer_token(API_TOKEN))
-            .and(not(header_exists(TEST_HEADER)))
-            .respond_with(ResponseTemplate::new(StatusCode::OK))
-            .mount(&mock_server)
-            .await;
-
-        Mock::given(method("GET"))
-            .and(path(format!("{}{}", AUTHENTICATED_API_PATH, TEST_API_PATH)))
-            .and(bearer_token(API_TOKEN))
-            .and(header_exists(TEST_HEADER))
-            .respond_with(ResponseTemplate::new(StatusCode::OK))
-            .mount(&mock_server)
-            .await;
+        setup_route(&mock_server, ANONYMOUS_API_PATH, true, false).await;
+        setup_route(&mock_server, format!("{}{}", ANONYMOUS_API_PATH, TEST_API_PATH), true, true).await;
+        setup_route(&mock_server, AUTHENTICATED_API_PATH, false, false).await;
+        setup_route(&mock_server, format!("{}{}", AUTHENTICATED_API_PATH, TEST_API_PATH), false, true).await;
 
         mock_server
     }
