@@ -54,4 +54,8 @@ pub enum Error {
     /// CLI config file did not contain an API token (see [get_cli_credentials](crate::cli::get_cli_credentials))
     #[error("Exercism CLI config file did not contain an API token")]
     ApiTokenNotFoundInConfig,
+
+    /// Error encountered while performing a request to an Exercism API
+    #[error("Error while performing API request: {0:?}")]
+    ApiError(#[from] reqwest::Error),
 }
