@@ -40,4 +40,10 @@ impl Client {
             None => builder,
         }
     }
+
+    /// Creates a [reqwest::RequestBuilder] used to send a GET request to an Exercism API.
+    /// This is a shorthand for [request](Client::request) with `method` = [Method::GET].
+    pub fn get<U: IntoUrl>(&self, url: U) -> reqwest::RequestBuilder {
+        self.request(Method::GET, url)
+    }
 }

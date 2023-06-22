@@ -75,13 +75,20 @@ mod client {
         ];
 
         for uri in &uris {
-            let status = client.request(Method::GET, uri)
+            let request_status = client.request(Method::GET, uri)
+                .send()
+                .await
+                .unwrap()
+                .status();
+            let get_status = client.get(uri)
                 .send()
                 .await
                 .unwrap()
                 .status();
 
-            assert_eq!(status, expected_status_code(working_uri.as_str(), uri));
+            let expected_status = expected_status_code(working_uri.as_str(), uri);
+            assert_eq!(request_status, expected_status);
+            assert_eq!(get_status, expected_status);
         }
     }
 
