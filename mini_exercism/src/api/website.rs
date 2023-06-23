@@ -6,23 +6,42 @@ use derive_builder::Builder;
 use serde::Deserialize;
 use strum_macros::{AsRefStr, Display};
 use crate::api;
-use crate::api::website::detail::website_api_url;
+use crate::api::website::detail::DEFAULT_WEBSITE_API_BASE_URL;
 use crate::core::Result;
 
 /// Client for the Exercism website API. This API is undocumented and
 /// is mostly used by the website itself to fetch information.
 pub struct Client {
     api_client: api::Client,
+    api_base_url: String,
 }
 
 impl Client {
     /// Creates a new client for the Exercism website API.
+    ///
+    /// # Arguments
+    ///
+    /// - `api_client` - The [Exercism API client](api::Client) used to perform requests.
     pub fn new(api_client: api::Client) -> Self {
-        Self { api_client }
+        Self::with_custom_api_base_url(api_client, DEFAULT_WEBSITE_API_BASE_URL)
+    }
+
+    /// Creates a new client for the Exercism website API using the provided API base URL.
+    /// This is meant to be used for testing purposes.
+    ///
+    /// # Arguments
+    ///
+    /// - `api_client` - The [Exercism API client](api::Client) used to perform requests.
+    /// - `api_base_url` - Base URL of the Exercism website API. Must not end with `/`.
+    pub fn with_custom_api_base_url<T: Into<String>>(api_client: api::Client, api_base_url: T) -> Self {
+        Self {
+            api_client,
+            api_base_url: api_base_url.into(),
+        }
     }
 
     /// Returns a list of Exercism tracks.
-    /// - If the request is performed anonymously (see [Client::credentials](crate::api::Client::credentials)),
+    /// - If the request is performed anonymously (see [api::Client::credentials]),
     ///   will return a list of all tracks supported on the website.
     /// - If the request is performed with credentials, tracks that the user has joined will be
     ///   identified by the `is_joined` field.
@@ -37,18 +56,22 @@ impl Client {
     ///
     /// [`ApiError`]: crate::core::Error#variant.ApiError
     pub async fn get_tracks(&self, status_filter: TrackStatusFilter) -> Result<Tracks> {
-        Ok(self.api_client.get(website_api_url("tracks"))
+        Ok(self.api_client.get(self.api_url("tracks"))
             .query(&[("status", status_filter.as_ref())])
             .send()
             .await?
             .json::<Tracks>()
             .await?)
     }
+
+    fn api_url(&self, url: &str) -> String {
+        format!("{}/{}", self.api_base_url, url)
+    }
 }
 
 /// Filters that can be applied when fetching language tracks from the Exercism website API.
 #[derive(Debug, Default, Builder)]
-#[builder(derive(Debug), default, build_fn(error = "crate::core::Error"))]
+#[builder(derive(Debug), default, build_fn(name = "fallible_build", error = "crate::core::Error"))]
 pub struct TrackFilters {
     /// Criteria used to filter language tracks.
     /// Applied to both track `name`s (e.g. slugs) and `title`s.
@@ -62,6 +85,12 @@ pub struct TrackFilters {
     /// Language track's status filter.
     #[builder(setter(strip_option))]
     pub status: Option<TrackStatusFilter>,
+}
+
+impl TrackFiltersBuilder {
+    pub fn build(&self) -> TrackFilters {
+        self.fallible_build().unwrap()
+    }
 }
 
 /// Possible status filter of Exercism language tracks.

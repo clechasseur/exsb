@@ -1,11 +1,17 @@
 //! Types and functions to interact with the Exercism APIs.
 
+pub(crate) mod detail;
+
 pub mod website;
 
 use reqwest::{IntoUrl, Method};
 use crate::core::Credentials;
 
-/// Client class used to query the Exercism APIs.
+/// Client class used to query an Exercism API.
+///
+/// ## Note
+///
+/// You do not usually have to create an instance of this class yourself;
 pub struct Client {
     http_client: reqwest::Client,
     credentials: Option<Credentials>,

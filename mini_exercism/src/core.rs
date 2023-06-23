@@ -1,6 +1,7 @@
 //! Core types used across the mini_exercism library.
 
 use std::io;
+use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
 /// Struct storing the credentials used to access the Exercism API.
@@ -15,7 +16,7 @@ use thiserror::Error;
 ///
 /// assert_eq!(credentials.api_token(), api_token);
 /// ```
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Credentials {
     api_token: String,
 }
@@ -55,7 +56,20 @@ pub enum Error {
     #[error("Exercism CLI config file did not contain an API token")]
     ApiTokenNotFoundInConfig,
 
+    #[error("A field was missing while trying to create a new Exercism API client: {0}")]
+    ApiClientUninitializedField(String),
+
     /// Error encountered while performing a request to an Exercism API
     #[error("Error while performing API request: {0:?}")]
     ApiError(#[from] reqwest::Error),
+}
+
+impl From<UninitializedFieldError> for Error {
+    /// Creates a new [Error] for an uninitialized field while trying to
+    /// create a new Exercism API client.
+    ///
+    /// [Error]: crate::Core::Error#variant.ApiClientUninitializedField
+    fn from(ufe: UninitializedFieldError) -> Self {
+        Error::ApiClientUninitializedField(ufe.field_name().to_string())
+    }
 }
