@@ -14,7 +14,14 @@ jobs:
       matrix:
         toolchain: [ 1.68.2, stable, beta, nightly ]
         os: [ ubuntu, macos, windows ]
+        include:
+          - experimental: false
+          - toolchain: beta
+            experimental: true
+          - toolchain: nightly
+            experimental: true
     runs-on: ${{ matrix.os }}-latest
+    continue-on-error: ${{ matrix.experimental }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
