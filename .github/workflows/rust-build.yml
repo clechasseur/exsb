@@ -18,6 +18,8 @@ jobs:
             experimental: true
     runs-on: ${{ matrix.os }}-latest
     continue-on-error: ${{ matrix.experimental }}
+    permissions:
+      checks: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
