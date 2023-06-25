@@ -13,10 +13,21 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run cargo-tarpaulin
-        uses: actions-rs/tarpaulin@v0.1
+      - name: Install cargo-binstall
+        run: |
+          curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
+
+      - name: Install cargo-tarpaulin
+        uses: actions-rs/cargo@v1
         with:
-          version: '0.26.0'
+          command: binstall
+          args: --no-confirm --no-symlinks cargo-tarpaulin
+
+      - name: Run cargo-tarpaulin
+        uses: actions-rs/cargo@v1
+        with:
+          command: tarpaulin
+          args: --verbose --workspace --all-features --out Xml
 
       - name: Upload code coverage results to codecov.io
         uses: codecov/codecov-action@v3
