@@ -13,6 +13,11 @@ documentation = "https://github.com/clechasseur/exsb"
 
 description = "Command-line tool to backup your Exercism.org solutions"
 
+keywords = [ "cli", "exercism" ]
+categories = [ "command-line-utilities" ]
+
+include = [ "src/**/*", "tests/**/*", "Cargo.lock", "Cargo.toml", "LICENSE", "README.md" ]
+
 [dependencies]
 clap = { version = "4.4.3", features = ["derive", "string"] }
 mini_exercism = { version = "1.0.0", features = ["cli"] }
