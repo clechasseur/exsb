@@ -92,7 +92,7 @@ jobs:
       matrix:
         toolchain: [ 1.70.0, stable, beta, nightly ]
         os: [ ubuntu, macos, windows ]
-        ignore-lock: [ false, true ]
+        ignore-lock: [ false ]
         all-features: [ false ]
         include:
           - experimental: false
