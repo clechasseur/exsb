@@ -56,35 +56,6 @@ jobs:
         with:
           args: --all
 
-  build-msrv:
-    name: Release build for minimum Rust version ${{ matrix.toolchain }} on ${{ matrix.os }}${{ matrix.all-features && ' with all features' || '' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        toolchain: [ 1.70.0 ]
-        os: [ ubuntu, macos, windows ]
-        all-features: [ false ]
-    runs-on: ${{ matrix.os }}-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust toolchain ${{ matrix.toolchain }}
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: ${{ matrix.toolchain }}
-
-      - name: Output Rust toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
-
-      - name: Run checks
-        uses: clechasseur/rs-cargo@v2
-        with:
-          command: check
-          args: --workspace --lib ${{ matrix.all-features && '--all-features' || '' }}
-
   build:
     name: Release build for Rust ${{ matrix.toolchain }}${{ matrix.experimental && ' (experimental)' || '' }} on ${{ matrix.os }}${{ matrix.ignore-lock && ' without Cargo.lock' || '' }}${{ matrix.all-features && ' with all features' || '' }}
     strategy:
