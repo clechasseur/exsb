@@ -16,5 +16,5 @@ test:
 tarpaulin:
     cargo tarpaulin --target-dir target-tarpaulin
 
-doc:
-    cargo +nightly doc --workspace --all-features --open
+msrv:
+    cargo msrv -- cargo check --workspace --all-targets --all-features --release

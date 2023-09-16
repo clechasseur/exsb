@@ -4,7 +4,7 @@ This guide is meant for people wishing to contribute to this open-source project
 
 ### Rust
 
-You need at least **Rust 1.68.2** (_TODO validate this minimum version_) to build this project's code and run the tests. You can install Rust from the [official website](https://www.rust-lang.org/tools/install).
+You need at least **Rust 1.70.0** to build this project's code and run the tests. You can install Rust from the [official website](https://www.rust-lang.org/tools/install).
 If you already have a version of Rust installed via `rustup` but it's too old, you can update by running
 
 ```bash
@@ -13,7 +13,7 @@ rustup update
 
 ### Rust nightly
 
-In order to run `rustfmt` or generate the docs, you will need a Nightly Rust toolset. If you do not have one installed, you can install one via `rustup` by running
+In order to run `rustfmt`, you will need a Nightly Rust toolset. If you do not have one installed, you can install one via `rustup` by running
 
 ```bash
 rustup toolchain install nightly
@@ -83,16 +83,6 @@ just tarpaulin
 ```
 
 Make sure coverage is at the required level before submitting a PR.
-
-### Generating documentation
-
-All public symbols in the crate need to be documented, otherwise checks won't pass. To validate this, you can generate docs locally by running
-
-```bash
-just doc
-```
-
-Make sure any new public symbol is documented before submitting a PR.
 
 ## Questions?
 

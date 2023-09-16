@@ -1,0 +1,21 @@
+[package]
+name = "exsb"
+version = "0.1.0"
+authors = [ "Charles Lechasseur <shiftingbeard@gmx.com>" ]
+edition = "2021"
+
+readme = "README.md"
+license = "MIT"
+
+homepage = "https://github.com/clechasseur/exsb#readme"
+repository = "https://github.com/clechasseur/exsb"
+documentation = "https://github.com/clechasseur/exsb"
+
+description = "Command-line tool to backup your Exercism.org solutions"
+
+[dependencies]
+clap = { version = "4.4.3", features = ["derive", "string"] }
+mini_exercism = { version = "1.0.0", features = ["cli"] }
+
+[dev-dependencies]
+assert_cmd = "2.0.12"
