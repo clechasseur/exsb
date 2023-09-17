@@ -6,6 +6,7 @@ pub(crate) mod exercism;
 pub(crate) mod reqwest;
 
 use clap::Parser;
+use clap_verbosity_flag::{InfoLevel, Verbosity};
 pub use error::Error;
 pub use error::Result;
 
@@ -15,13 +16,22 @@ use crate::commands::Commands;
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
+    #[command(flatten)]
+    verbose: Verbosity<InfoLevel>,
+
     #[command(subcommand)]
     command: Commands,
 }
 
 impl Cli {
     pub async fn execute() -> Result<()> {
-        Self::parse().command.execute().await
+        let cli = Self::parse();
+
+        env_logger::builder()
+            .filter_level(cli.verbose.log_level_filter())
+            .init();
+
+        cli.command.execute().await
     }
 }
 
