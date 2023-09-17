@@ -6,10 +6,10 @@ pub(crate) mod exercism;
 pub(crate) mod reqwest;
 
 use clap::Parser;
-use crate::commands::Commands;
-
 pub use error::Error;
 pub use error::Result;
+
+use crate::commands::Commands;
 
 /// Backup your Exercism.org solutions
 #[derive(Debug, Parser)]
@@ -20,7 +20,19 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn execute(&self) -> Result<()> {
-        self.command.execute()
+    pub async fn execute() -> Result<()> {
+        Self::parse().command.execute().await
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use clap::CommandFactory;
+
+    use super::*;
+
+    #[test]
+    fn test_cli() {
+        Cli::command().debug_assert();
     }
 }

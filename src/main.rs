@@ -1,6 +1,6 @@
-use clap::Parser;
 use exsb::Cli;
 
-fn main() -> exsb::Result<()> {
-    Cli::parse().execute()
+#[tokio::main]
+async fn main() -> exsb::Result<()> {
+    Cli::execute().await
 }

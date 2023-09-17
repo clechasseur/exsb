@@ -1,6 +1,7 @@
 mod backup;
 
 use clap::Subcommand;
+
 use crate::commands::backup::args::BackupArgs;
 use crate::commands::backup::backup_solutions;
 
@@ -22,9 +23,9 @@ pub enum Commands {
 }
 
 impl Commands {
-    pub fn execute(&self) -> crate::Result<()> {
+    pub async fn execute(&self) -> crate::Result<()> {
         match &self {
-            Commands::Backup(args) => backup_solutions(args),
+            Commands::Backup(args) => backup_solutions(args).await,
         }
     }
 }

@@ -2,6 +2,7 @@ pub mod tracks;
 
 use mini_exercism::api;
 use mini_exercism::core::Credentials;
+
 use crate::reqwest::get_http_client;
 
 pub fn get_v1_client(credentials: &Credentials) -> crate::Result<api::v1::Client> {
