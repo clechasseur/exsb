@@ -15,6 +15,7 @@ fn test_backup_basic() {
         .arg("difference-of-squares")
         .arg("--status")
         .arg("published")
+        .arg(".")
         .assert()
         .success();
 }
