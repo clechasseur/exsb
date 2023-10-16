@@ -747,9 +747,9 @@ checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
 
 [[package]]
 name = "mini_exercism"
-version = "1.0.0"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42254fa6a487e86624323d327924da38c834e951a51e619c765fdafc3ea96d42"
+checksum = "0e8dafd1a73123fd4b4196957572f9deb50496cbebe88b9a4e7186fa373c7a54"
 dependencies = [
  "bytes",
  "derive_builder",
