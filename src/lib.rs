@@ -9,6 +9,7 @@ use clap::Parser;
 use clap_verbosity_flag::{InfoLevel, Verbosity};
 pub use error::Error;
 pub use error::Result;
+use log::{debug, info};
 
 use crate::commands::Commands;
 
@@ -30,6 +31,9 @@ impl Cli {
         env_logger::builder()
             .filter_level(cli.verbose.log_level_filter())
             .init();
+
+        info!("Starting exsb execution");
+        debug!("Parameters: {:?}", cli);
 
         cli.command.execute().await
     }

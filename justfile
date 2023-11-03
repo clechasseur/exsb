@@ -26,6 +26,9 @@ check:
 build *extra_args:
     {{cargo}} build --workspace --all-targets --all-features {{extra_args}}
 
+run *extra_args:
+    {{cargo}} run --all-features {{extra_args}}
+
 test *extra_args:
     {{cargo}} test --workspace --all-features {{extra_args}}
 

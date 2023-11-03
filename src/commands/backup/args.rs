@@ -26,6 +26,10 @@ pub struct BackupArgs {
     /// Filter out some solutions based on status
     #[arg(short, long, value_enum, default_value_t = SolutionStatus::Submitted)]
     pub status: SolutionStatus,
+
+    /// Whether to overwrite exercises that have already been downloaded
+    #[arg(short, long, default_value_t = false)]
+    pub force: bool,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
