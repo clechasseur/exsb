@@ -1,6 +1,7 @@
 name: CI
 
-on: [ push ]
+on:
+  push:
 
 env:
   CI: 1
@@ -31,9 +32,9 @@ jobs:
       - name: Run clippy
         uses: clechasseur/rs-clippy-check@v3
         with:
-          args: --workspace ${{ matrix.all-features && '--all-features' || '' }} -- -D warnings
+          args: --workspace --all-targets ${{ matrix.all-features && '--all-features' || '' }} -- -D warnings
 
-  format:
+  fmt:
     name: Rustfmt check
     runs-on: ubuntu-latest
     steps:
@@ -56,49 +57,56 @@ jobs:
         with:
           args: --all
 
-  build:
-    name: Release build for Rust ${{ matrix.toolchain }}${{ matrix.experimental && ' (experimental)' || '' }} on ${{ matrix.os }}${{ matrix.ignore-lock && ' without Cargo.lock' || '' }}${{ matrix.all-features && ' with all features' || '' }}
+  build-msrv:
+    name: MSRV build for Rust ${{ matrix.toolchain }} on ${{ matrix.os }}${{ matrix.all-features && ' with all features' || '' }}
     strategy:
       fail-fast: false
       matrix:
-        toolchain: [ 1.70.0, stable, beta, nightly ]
+        toolchain: [ 1.70.0 ]
         os: [ ubuntu, macos, windows ]
-        ignore-lock: [ false ]
         all-features: [ false ]
-        include:
-          - experimental: false
-          - toolchain: beta
-            experimental: true
-          - toolchain: nightly
-            experimental: true
     runs-on: ${{ matrix.os }}-latest
-    continue-on-error: ${{ matrix.experimental }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Remove Cargo.lock
-        if: ${{ matrix.ignore-lock }}
-        run: rm Cargo.lock
 
       - name: Install Rust toolchain ${{ matrix.toolchain }}
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.toolchain }}
 
+      - name: Install just
+        uses: extractions/setup-just@v1
+
       - name: Output Rust toolchain info
         run: |
           cargo --version --verbose
           rustc --version
 
-      - name: Run release build
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v1-rust
+          key: all-features-${{ matrix.all-features }}-msrv-cargo-files-${{ hashFiles('**/Cargo.*.msrv') }}
+
+      - name: Check if we need to install MSRV cargo files
+        id: check_msrv_cargo_files
+        uses: andstor/file-existence-action@v2
+        with:
+          files: "Cargo.lock.msrv, Cargo.toml.msrv"
+
+      - name: Install MSRV cargo files
+        if: ${{ steps.check_msrv_cargo_files.outputs.files_exists == 'true' }}
+        run: just pre-msrv
+
+      - name: Run checks
         uses: clechasseur/rs-cargo@v2
         with:
-          command: build
-          args: --workspace ${{ matrix.all-features && '--all-features' || '' }} --release
+          command: check
+          args: --workspace --lib --bins ${{ matrix.all-features && '--all-features' || '' }}
 
-  tests:
-    name: Tests for Rust ${{ matrix.toolchain }}${{ matrix.experimental && ' (experimental)' || '' }} on ${{ matrix.os }}${{ matrix.ignore-lock && ' without Cargo.lock' || '' }}${{ matrix.all-features && ' with all features' || '' }}
+  build:
+    name: Build for Rust ${{ matrix.toolchain }}${{ matrix.experimental && ' (experimental)' || '' }} on ${{ matrix.os }}${{ matrix.ignore-lock && ' without Cargo.lock' || '' }}${{ matrix.all-features && ' with all features' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -131,13 +139,20 @@ jobs:
         run: |
           cargo --version --verbose
           rustc --version
+
+      - name: Rust Cache
+        if: ${{ !matrix.experimental }}
+        uses: Swatinem/rust-cache@v2
+        with:
+          prefix-key: v1-rust
+          key: ignore-lock-${{ matrix.ignore-lock }}-all-features-${{ matrix.all-features }}
 
       - name: Run checks
         uses: clechasseur/rs-cargo@v2
         with:
           command: check
           args: --workspace --all-targets ${{ matrix.all-features && '--all-features' || '' }}
-  
+
       - name: Run tests
         uses: clechasseur/rs-cargo@v2
         with:
@@ -159,6 +174,11 @@ jobs:
         with:
           tool: cargo-tarpaulin
 
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: false
+
       - name: Run cargo-tarpaulin
         uses: clechasseur/rs-cargo@v2
         with:
@@ -177,3 +197,40 @@ jobs:
           path: |
             cobertura.xml
             tarpaulin-report.html
+
+  doc:
+    name: Rustdoc check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust nightly
+        uses: dtolnay/rust-toolchain@nightly
+
+      - name: Run rustdoc
+        uses: clechasseur/rs-cargo@v2
+        with:
+          command: doc
+          args: --workspace --all-features
+
+  publish-dry-run:
+    name: Publish dry-run
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust Cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-targets: false
+
+      - name: Perform publish dry-run
+        uses: clechasseur/rs-cargo@v2
+        with:
+          command: publish
+          args: --dry-run
