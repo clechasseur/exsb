@@ -3,6 +3,7 @@ mod error;
 
 pub(crate) mod credentials;
 pub(crate) mod exercism;
+pub(crate) mod progress;
 pub(crate) mod reqwest;
 
 use clap::Parser;
