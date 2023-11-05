@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Args, ValueEnum};
 use mini_exercism::api;
+use mini_exercism::api::v2::Solution;
 
 #[derive(Debug, Args)]
 pub struct BackupArgs {
@@ -14,12 +15,12 @@ pub struct BackupArgs {
     pub token: Option<String>,
 
     /// If specified, only solutions to exercises in the given track(s) will be downloaded; can be
-    /// specified multiple times.
+    /// specified multiple times
     #[arg(short, long)]
     pub track: Vec<String>,
 
     /// If specified, only solutions to the given exercise(s) will be downloaded; can be specified
-    /// multiple times.
+    /// multiple times
     #[arg(short, long)]
     pub exercise: Vec<String>,
 
@@ -54,5 +55,25 @@ impl TryFrom<api::v2::SolutionStatus> for SolutionStatus {
             api::v2::SolutionStatus::Published => Ok(SolutionStatus::Published),
             _ => Err(()),
         }
+    }
+}
+
+impl BackupArgs {
+    pub fn track_matches(&self, track: &str) -> bool {
+        self.track.is_empty() || self.track.iter().any(|t| t == track)
+    }
+
+    pub fn solution_matches(&self, solution: &Solution) -> bool {
+        self.solution_status_matches(solution.status.try_into().ok())
+            && self.exercise_matches(&solution.exercise.name)
+    }
+
+    fn solution_status_matches(&self, solution_status: Option<SolutionStatus>) -> bool {
+        self.status == SolutionStatus::Submitted
+            || solution_status.map_or(false, |st| st >= self.status)
+    }
+
+    fn exercise_matches(&self, exercise_name: &str) -> bool {
+        self.exercise.is_empty() || self.exercise.iter().any(|e| e == exercise_name)
     }
 }

@@ -9,8 +9,14 @@ pub async fn get_joined_tracks(client: &api::v2::Client) -> crate::Result<Vec<St
     Ok(tracks.into_iter().map(|track| track.name).collect())
 }
 
-pub async fn get_solutions(client: &api::v2::Client, track: &str) -> crate::Result<Vec<Solution>> {
+pub async fn get_solutions<T>(client: &api::v2::Client, track: T) -> crate::Result<Vec<Solution>>
+where
+    T: AsRef<str>,
+{
     let filters = ExerciseFilters::builder().include_solutions(true).build();
 
-    Ok(client.get_exercises(track, Some(filters)).await?.solutions)
+    Ok(client
+        .get_exercises(track.as_ref(), Some(filters))
+        .await?
+        .solutions)
 }

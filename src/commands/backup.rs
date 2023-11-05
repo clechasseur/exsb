@@ -1,26 +1,30 @@
 pub mod args;
 
+use std::borrow::Cow;
+use std::panic::resume_unwind;
 use std::path::Path;
 
 use anyhow::Context;
 use futures::StreamExt;
-use indicatif::ProgressBar;
-use log::{debug, info, log_enabled, trace, Level};
+use log::{debug, info, trace, Level};
 use mini_exercism::api;
 use mini_exercism::api::v2::Solution;
-use tokio::fs::{create_dir_all, metadata, read_dir, remove_dir_all, remove_file, File};
+use tokio::fs::{create_dir_all, metadata, File};
 use tokio::io::{AsyncWriteExt, BufWriter};
+use tokio::task::JoinSet;
 
-use crate::commands::backup::args::{BackupArgs, SolutionStatus};
+use crate::commands::backup::args::BackupArgs;
 use crate::credentials::get_api_credentials;
 use crate::exercism::tracks::{get_joined_tracks, get_solutions};
 use crate::exercism::{get_v1_client, get_v2_client};
+use crate::fs::delete_directory_content;
+use crate::progress::ProgressBar;
 
 pub async fn backup_solutions(args: &BackupArgs) -> crate::Result<()> {
-    info!("Starting solutions backup");
+    trace!("Starting solutions backup");
     debug!("BackupArgs: {:?}", args);
 
-    info!("Making sure output directory \"{}\" exists", args.path.display());
+    trace!("Making sure output directory \"{}\" exists", args.path.display());
     create_dir_all(&args.path)
         .await
         .with_context(|| format!("failed to create output directory {}", args.path.display()))?;
@@ -28,21 +32,36 @@ pub async fn backup_solutions(args: &BackupArgs) -> crate::Result<()> {
     let output_path = args.path.canonicalize().with_context(|| {
         format!("failed to get absolute path for output directory {}", args.path.display())
     })?;
-    debug!("Absolute output path: {}", output_path.display());
+    info!("Starting solutions backup to {}", output_path.display());
 
     let credentials = get_api_credentials(args.token.as_ref())?;
     let v1_client = get_v1_client(&credentials)?;
     let v2_client = get_v2_client(&credentials)?;
 
-    info!("Getting list of tracks to backup");
+    trace!("Getting list of tracks to backup");
     let tracks = get_tracks_to_backup(&v2_client, args).await?;
     debug!("{} tracks to backup", tracks.len());
+    trace!("Tracks to backup: {}", tracks.join(", "));
 
     info!("Getting list of solutions to backup");
     let solutions = get_solutions_to_backup(&v2_client, &tracks, args).await?;
     debug!("{} solutions to backup", solutions.len());
+    trace!("Solutions to backup: {}", {
+        let mut solution_names = String::new();
+        for solution in &solutions {
+            if !solution_names.is_empty() {
+                solution_names += ", ";
+            }
+            solution_names += &solution.track.name;
+            solution_names.push('/');
+            solution_names += &solution.exercise.name;
+        }
+        solution_names
+    });
 
+    let progress_bar = ProgressBar::for_log_level(Level::Info, solutions.len());
     for solution in &solutions {
+        progress_bar.println(format!("{}/{}", solution.track.name, solution.exercise.name));
         download_one_solution(&v1_client, solution, &output_path, args)
             .await
             .with_context(|| {
@@ -51,6 +70,7 @@ pub async fn backup_solutions(args: &BackupArgs) -> crate::Result<()> {
                     solution.track.name, solution.exercise.name,
                 )
             })?;
+        progress_bar.inc(1);
     }
 
     Ok(())
@@ -64,7 +84,7 @@ async fn get_tracks_to_backup(
         .await
         .with_context(|| "failed to get list of tracks joined by user")?
         .into_iter()
-        .filter(|track| should_download_track(track, args))
+        .filter(|track| args.track_matches(track))
         .collect())
 }
 
@@ -74,16 +94,35 @@ async fn get_solutions_to_backup(
     args: &BackupArgs,
 ) -> crate::Result<Vec<Solution>> {
     let mut solutions = Vec::new();
-    for track in tracks {
-        solutions.extend(
-            get_solutions(client, track)
-                .await
-                .with_context(|| {
-                    format!("failed to get solutions submitted by user for track {}", track)
-                })?
-                .into_iter()
-                .filter(|solution| should_download_solution(solution, args)),
-        );
+    {
+        let progress_bar = ProgressBar::for_log_level(Level::Trace, tracks.len());
+
+        let mut downloads = JoinSet::new();
+        for track in tracks {
+            let client = client.clone();
+            let track = Cow::from(track.clone());
+            downloads.spawn(async move {
+                let solution_track = track.clone();
+                (track, get_solutions(&client, solution_track).await)
+            });
+        }
+
+        while let Some(join_result) = downloads.join_next().await {
+            match join_result {
+                Ok((track, track_solutions)) => {
+                    solutions.extend(
+                        track_solutions
+                            .with_context(|| {
+                                format!("failed to download solutions for track {}", track)
+                            })?
+                            .into_iter()
+                            .filter(|solution| args.solution_matches(solution)),
+                    );
+                    progress_bar.inc(1);
+                },
+                Err(err) => resume_unwind(err.into_panic()),
+            }
+        }
     }
 
     Ok(solutions)
@@ -105,9 +144,10 @@ async fn download_one_solution(
         .unwrap_or(false)
     {
         if args.force {
-            info!(
+            trace!(
                 "Solution to {}/{} already exists on disk; cleaning up...",
-                solution.track.name, solution.exercise.name
+                solution.track.name,
+                solution.exercise.name
             );
             delete_directory_content(&destination_path)
                 .await
@@ -115,15 +155,16 @@ async fn download_one_solution(
                     format!("failed to clean up existing directory {}", destination_path.display())
                 })?;
         } else {
-            info!(
+            trace!(
                 "Solution to {}/{} already exists on disk; skipping",
-                solution.track.name, solution.exercise.name
+                solution.track.name,
+                solution.exercise.name
             );
             return Ok(());
         }
     }
 
-    info!(
+    trace!(
         "Downloading solution to {}/{} to {}",
         solution.track.name,
         solution.exercise.name,
@@ -140,52 +181,13 @@ async fn download_one_solution(
 
     let files = get_files_to_backup(client, solution).await?;
     debug!("{} files to backup", files.len());
+    trace!("Files to backup: {}", files.join(", "));
 
-    let progress_bar = log_enabled!(Level::Info).then(|| ProgressBar::new(files.len() as u64));
+    let progress_bar = ProgressBar::for_log_level(Level::Trace, files.len());
     for file in &files {
-        if let Some(progress_bar) = &progress_bar {
-            progress_bar.println(file);
-            progress_bar.inc(1);
-        }
+        progress_bar.println(file);
         download_one_file(client, solution, file, &destination_path).await?;
-    }
-    if let Some(progress_bar) = &progress_bar {
-        progress_bar.finish_and_clear();
-    }
-
-    Ok(())
-}
-
-async fn delete_directory_content(directory_path: &Path) -> crate::Result<()> {
-    trace!("Removing content of directory {}", directory_path.display());
-    let mut destination_entries = read_dir(directory_path).await.with_context(|| {
-        format!("failed to get content of directory {}", directory_path.display())
-    })?;
-
-    loop {
-        let entry = destination_entries.next_entry().await.with_context(|| {
-            format!("failed to get next entry of directory {}", directory_path.display())
-        })?;
-
-        if let Some(entry) = entry {
-            let entry_type = entry.file_type().await.with_context(|| {
-                format!("failed to fetch file type for entry {}", entry.path().display())
-            })?;
-
-            if entry_type.is_dir() {
-                trace!("Removing directory {:?}", entry.file_name());
-                remove_dir_all(entry.path()).await.with_context(|| {
-                    format!("failed to remove directory {}", entry.path().display())
-                })?;
-            } else {
-                trace!("Removing file {:?}", entry.file_name());
-                remove_file(entry.path())
-                    .await
-                    .with_context(|| format!("failed to remove file {}", entry.path().display()))?;
-            }
-        } else {
-            break;
-        }
+        progress_bar.inc(1);
     }
 
     Ok(())
@@ -200,8 +202,8 @@ async fn get_files_to_backup(
         .await
         .with_context(|| {
             format!(
-                "failed to get list of files for solution to exercise {} in track {}",
-                solution.exercise.name, solution.track.name
+                "failed to get list of files for solution {}/{}",
+                solution.track.name, solution.exercise.name,
             )
         })?
         .solution
@@ -214,26 +216,17 @@ async fn download_one_file(
     file: &str,
     destination_path: &Path,
 ) -> crate::Result<()> {
-    trace!(
-        "Downloading file {} for solution to {}/{}",
-        file,
-        solution.track.name,
-        solution.exercise.name
-    );
-
     let mut file_stream = client.get_file(&solution.uuid, file).await;
 
     let mut destination_file_path = destination_path.to_path_buf();
     destination_file_path.extend(file.split('/'));
 
     if let Some(parent) = destination_file_path.parent() {
-        trace!("Making sure destination directory {} exists", parent.display());
         create_dir_all(parent).await.with_context(|| {
             format!("failed to make sure parent of file {} exists", destination_file_path.display())
         })?;
     }
 
-    trace!("Creating destination file \"{}\"", destination_file_path.display());
     let destination_file = File::create(&destination_file_path)
         .await
         .with_context(|| {
@@ -241,7 +234,6 @@ async fn download_one_file(
         })?;
     let mut destination_file = BufWriter::new(destination_file);
 
-    trace!("Transferring file content for \"{}\"", destination_file_path.display());
     while let Some(bytes) = file_stream.next().await {
         let bytes = bytes.with_context(|| {
             format!(
@@ -259,16 +251,4 @@ async fn download_one_file(
     })?;
 
     Ok(())
-}
-
-fn should_download_track(track: &str, args: &BackupArgs) -> bool {
-    args.track.is_empty() || args.track.iter().any(|t| t == track)
-}
-
-fn should_download_solution(solution: &Solution, args: &BackupArgs) -> bool {
-    let solution_status: Option<SolutionStatus> = solution.status.try_into().ok();
-
-    (args.status == SolutionStatus::Submitted
-        || solution_status.map_or(false, |st| st >= args.status))
-        && (args.exercise.is_empty() || args.exercise.iter().any(|e| e == &solution.exercise.name))
 }

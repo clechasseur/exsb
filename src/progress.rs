@@ -1,6 +1,6 @@
 //! Helpers dealing with CLI progress bars.
 
-use log::{Level, log_enabled};
+use log::{log_enabled, Level};
 
 #[derive(Debug, Clone)]
 pub struct ProgressBar {
@@ -9,9 +9,7 @@ pub struct ProgressBar {
 
 impl ProgressBar {
     pub fn for_log_level(level: Level, len: usize) -> Self {
-        Self {
-            bar: log_enabled!(level).then(|| indicatif::ProgressBar::new(len as u64)),
-        }
+        Self { bar: log_enabled!(level).then(|| indicatif::ProgressBar::new(len as u64)) }
     }
 
     pub fn println<M>(&self, msg: M)
@@ -32,5 +30,11 @@ impl ProgressBar {
         if let Some(bar) = &self.bar {
             f(bar);
         }
+    }
+}
+
+impl Drop for ProgressBar {
+    fn drop(&mut self) {
+        self.run_if_some(|bar| bar.finish_and_clear());
     }
 }
