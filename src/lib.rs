@@ -4,22 +4,23 @@ mod error;
 pub(crate) mod credentials;
 pub(crate) mod exercism;
 pub(crate) mod fs;
-pub(crate) mod progress;
 pub(crate) mod reqwest;
+pub(crate) mod task;
+pub(crate) mod tracing;
 
 use clap::Parser;
-use clap_verbosity_flag::{InfoLevel, Verbosity};
+use clap_verbosity_flag::{Verbosity, WarnLevel};
 pub use error::Error;
 pub use error::Result;
-use log::debug;
 
 use crate::commands::Commands;
+use crate::tracing::log_level_to_tracing_level;
 
 #[derive(Debug, Parser)]
 #[command(version, about, long_about = None)]
 pub struct Cli {
     #[command(flatten)]
-    verbose: Verbosity<InfoLevel>,
+    verbose: Verbosity<WarnLevel>,
 
     #[command(subcommand)]
     command: Commands,
@@ -29,11 +30,9 @@ impl Cli {
     pub async fn execute() -> Result<()> {
         let cli = Self::parse();
 
-        env_logger::builder()
-            .filter_level(cli.verbose.log_level_filter())
+        tracing_subscriber::fmt()
+            .with_max_level(cli.verbose.log_level().map(log_level_to_tracing_level))
             .init();
-
-        debug!("Input parameters: {:?}", cli);
 
         cli.command.execute().await
     }

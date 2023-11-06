@@ -1,6 +1,9 @@
 mod backup;
 
+use std::borrow::Cow;
+
 use clap::Subcommand;
+use tracing::instrument;
 
 use crate::commands::backup::args::BackupArgs;
 use crate::commands::backup::backup_solutions;
@@ -23,9 +26,10 @@ pub enum Commands {
 }
 
 impl Commands {
-    pub async fn execute(&self) -> crate::Result<()> {
-        match &self {
-            Commands::Backup(args) => backup_solutions(args).await,
+    #[instrument(skip_all)]
+    pub async fn execute(self) -> crate::Result<()> {
+        match self {
+            Commands::Backup(args) => backup_solutions(Cow::<'static, _>::Owned(args)).await,
         }
     }
 }

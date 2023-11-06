@@ -4,7 +4,7 @@ use clap::{Args, ValueEnum};
 use mini_exercism::api;
 use mini_exercism::api::v2::Solution;
 
-#[derive(Debug, Args)]
+#[derive(Debug, Clone, Args)]
 pub struct BackupArgs {
     /// Path where to store the downloaded solutions
     pub path: PathBuf,
@@ -31,6 +31,10 @@ pub struct BackupArgs {
     /// Whether to overwrite exercises that have already been downloaded
     #[arg(short, long, default_value_t = false)]
     pub force: bool,
+
+    /// Maximum number of concurrent downloads to the Exercism server
+    #[arg(short, long, default_value_t = 4)]
+    pub max_downloads: usize,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
