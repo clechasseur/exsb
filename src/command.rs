@@ -5,11 +5,11 @@ use std::borrow::Cow;
 use clap::Subcommand;
 use tracing::instrument;
 
-use crate::commands::backup::args::BackupArgs;
-use crate::commands::backup::backup_solutions;
+use crate::command::backup::args::BackupArgs;
+use crate::command::backup::backup_solutions;
 
 #[derive(Debug, Subcommand)]
-pub enum Commands {
+pub enum Command {
     /// Download Exercism.org solutions for backup
     ///
     /// By default, this command will attempt to download backups of all solutions to exercises
@@ -25,11 +25,11 @@ pub enum Commands {
     Backup(BackupArgs),
 }
 
-impl Commands {
+impl Command {
     #[instrument(skip_all)]
     pub async fn execute(self) -> crate::Result<()> {
         match self {
-            Commands::Backup(args) => backup_solutions(Cow::<'static, _>::Owned(args)).await,
+            Command::Backup(args) => backup_solutions(Cow::<'static, _>::Owned(args)).await,
         }
     }
 }

@@ -1,4 +1,4 @@
-mod commands;
+mod command;
 mod error;
 
 pub(crate) mod credentials;
@@ -10,10 +10,11 @@ pub(crate) mod tracing;
 
 use clap::Parser;
 use clap_verbosity_flag::{Verbosity, WarnLevel};
+use tracing_log::LogTracer;
 pub use error::Error;
 pub use error::Result;
 
-use crate::commands::Commands;
+use crate::command::Command;
 use crate::tracing::log_level_to_tracing_level;
 
 #[derive(Debug, Parser)]
@@ -23,7 +24,7 @@ pub struct Cli {
     verbose: Verbosity<WarnLevel>,
 
     #[command(subcommand)]
-    command: Commands,
+    command: Command,
 }
 
 impl Cli {
@@ -33,6 +34,8 @@ impl Cli {
         tracing_subscriber::fmt()
             .with_max_level(cli.verbose.log_level().map(log_level_to_tracing_level))
             .init();
+
+        LogTracer::init().expect("LogTracer initialized multiple times");
 
         cli.command.execute().await
     }

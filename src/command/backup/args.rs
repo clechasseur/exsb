@@ -9,30 +9,31 @@ pub struct BackupArgs {
     /// Path where to store the downloaded solutions
     pub path: PathBuf,
 
-    /// API token to use to connect to the Exercism.org website; if unspecified,
-    /// Exercism CLI token will be used if possible
+    /// Exercism.org API token; if unspecified, CLI token will be used instead
     #[arg(long)]
     pub token: Option<String>,
 
-    /// If specified, only solutions to exercises in the given track(s) will be downloaded; can be
-    /// specified multiple times
+    /// Only download solutions in the given track(s) (can be used multiple times)
     #[arg(short, long)]
     pub track: Vec<String>,
 
-    /// If specified, only solutions to the given exercise(s) will be downloaded; can be specified
-    /// multiple times
+    /// Only download solutions for the given exercise(s) (can be used multiple times)
     #[arg(short, long)]
     pub exercise: Vec<String>,
 
-    /// Filter out some solutions based on status
+    /// Only download solutions with the given status (or greater)
     #[arg(short, long, value_enum, default_value_t = SolutionStatus::Submitted)]
     pub status: SolutionStatus,
 
-    /// Whether to overwrite exercises that have already been downloaded
+    /// Overwrite exercises that have already been downloaded
     #[arg(short, long, default_value_t = false)]
     pub force: bool,
 
-    /// Maximum number of concurrent downloads to the Exercism server
+    /// Determine what solutions to backup without downloading them
+    #[arg(long, default_value_t = false)]
+    pub dry_run: bool,
+
+    /// Maximum number of concurrent downloads
     #[arg(short, long, default_value_t = 4)]
     pub max_downloads: usize,
 }

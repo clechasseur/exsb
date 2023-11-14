@@ -15,7 +15,7 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::{debug, info, instrument, trace};
 
-use crate::commands::backup::args::BackupArgs;
+use crate::command::backup::args::BackupArgs;
 use crate::credentials::get_api_credentials;
 use crate::exercism::tracks::{get_joined_tracks, get_solutions};
 use crate::exercism::{get_v1_client, get_v2_client};
