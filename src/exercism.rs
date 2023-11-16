@@ -3,18 +3,16 @@ pub mod tracks;
 use mini_exercism::api;
 use mini_exercism::core::Credentials;
 
-use crate::reqwest::get_http_client;
-
-pub fn get_v1_client(credentials: &Credentials) -> crate::Result<api::v1::Client> {
-    Ok(api::v1::Client::builder()
-        .http_client(get_http_client()?)
+pub fn get_v1_client(http_client: &reqwest::Client, credentials: &Credentials) -> api::v1::Client {
+    api::v1::Client::builder()
+        .http_client(http_client.clone())
         .credentials(credentials.clone())
-        .build())
+        .build()
 }
 
-pub fn get_v2_client(credentials: &Credentials) -> crate::Result<api::v2::Client> {
-    Ok(api::v2::Client::builder()
-        .http_client(get_http_client()?)
+pub fn get_v2_client(http_client: &reqwest::Client, credentials: &Credentials) -> api::v2::Client {
+    api::v2::Client::builder()
+        .http_client(http_client.clone())
         .credentials(credentials.clone())
-        .build())
+        .build()
 }

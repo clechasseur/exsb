@@ -13,67 +13,82 @@ use tokio::fs;
 use tokio::io::{AsyncWriteExt, BufWriter};
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
-use tracing::{debug, info, instrument, trace};
+use tracing::{debug, enabled, event_enabled, info, instrument, trace, Level};
 
 use crate::command::backup::args::BackupArgs;
 use crate::credentials::get_api_credentials;
 use crate::exercism::tracks::{get_joined_tracks, get_solutions};
 use crate::exercism::{get_v1_client, get_v2_client};
 use crate::fs::delete_directory_content;
+use crate::reqwest::get_http_client;
 use crate::task::wait_for_all;
 
-#[instrument]
+#[instrument(skip_all)]
 pub async fn backup_solutions(args: Cow<'static, BackupArgs>) -> crate::Result<()> {
-    debug!(?args);
+    info!("Starting Exercism solutions backup");
+    trace!(?args);
 
-    fs::create_dir_all(&args.path)
-        .await
-        .with_context(|| format!("failed to create output directory {}", args.path.display()))?;
+    if !args.dry_run {
+        fs::create_dir_all(&args.path).await.with_context(|| {
+            format!("failed to create output directory {}", args.path.display())
+        })?;
+    }
 
     let output_path =
         Cow::<'static, PathBuf>::Owned(args.path.canonicalize().with_context(|| {
             format!("failed to get absolute path for output directory {}", args.path.display())
         })?);
-    info!(output_path = %output_path.display());
+    trace!(output_path = %output_path.display());
 
     let credentials = get_api_credentials(args.token.as_ref())?;
-    let v1_client = get_v1_client(&credentials)?;
-    let v2_client = get_v2_client(&credentials)?;
+    let http_client = get_http_client()?;
+    let v1_client = get_v1_client(&http_client, &credentials);
+    let v2_client = get_v2_client(&http_client, &credentials);
 
     let tracks = get_tracks_to_backup(&v2_client, &args).await?;
-    info!(num_tracks = tracks.len());
-    debug!(?tracks);
+    info!("Number of tracks to scan: {}", tracks.len());
 
-    // Create track directories right away so that concurrent tasks don't end up trying
-    // to create a directory multiple times.
-    create_track_directories(&output_path, &tracks).await?;
+    if !args.dry_run {
+        // Create track directories right away so that concurrent tasks don't end up trying
+        // to create a directory multiple times.
+        create_track_directories(&output_path, &tracks).await?;
+    }
 
     let limiter = Arc::new(Semaphore::new(args.max_downloads));
 
     let solutions = get_solutions_to_backup(&v2_client, &tracks, &args, &limiter).await?;
-    info!(num_solutions = solutions.len());
-    debug!(?solutions);
+    info!("Number of solutions to backup: {}", solutions.len());
 
-    let mut downloads = JoinSet::new();
-    for solution in &solutions {
-        debug!(solution = ?(&solution));
-
-        let v1_client = v1_client.clone();
-        let solution = solution.clone();
-        let output_path = output_path.clone();
-        let args = args.clone();
-        let limiter = limiter.clone();
-        downloads.spawn(async move {
-            download_one_solution(v1_client, solution, output_path, &args, limiter).await
-        });
+    if args.dry_run && event_enabled!(Level::INFO) {
+        let solutions_list = solutions
+            .iter()
+            .map(|solution| format!("{}/{}", solution.track.name, solution.exercise.name))
+            .collect::<Vec<_>>()
+            .join(", ");
+        info!("Solutions to backup: {}", solutions_list);
     }
 
-    wait_for_all(&mut downloads).await?;
+    if !args.dry_run || enabled!(Level::DEBUG) {
+        let mut downloads = JoinSet::new();
+        for solution in &solutions {
+            let v1_client = v1_client.clone();
+            let solution = solution.clone();
+            let output_path = output_path.clone();
+            let args = args.clone();
+            let limiter = limiter.clone();
+            downloads.spawn(async move {
+                download_one_solution(v1_client, solution, output_path, &args, limiter).await
+            });
+        }
 
+        wait_for_all(&mut downloads).await?;
+    }
+
+    info!("Exercism solutions backup complete");
     Ok(())
 }
 
-#[instrument(skip_all)]
+#[instrument(skip_all, ret(level = "trace"))]
 async fn get_tracks_to_backup(
     client: &api::v2::Client,
     args: &BackupArgs,
@@ -104,7 +119,7 @@ async fn create_track_directories(
     Ok(())
 }
 
-#[instrument(skip_all)]
+#[instrument(skip_all, ret(level = "trace"))]
 async fn get_solutions_to_backup(
     client: &api::v2::Client,
     tracks: &Vec<Cow<'static, str>>,
@@ -150,7 +165,11 @@ async fn get_solutions_to_backup(
     Ok(solutions)
 }
 
-#[instrument(skip_all, fields(%solution.track.name, %solution.exercise.name))]
+#[instrument(
+    level = "debug",
+    skip_all,
+    fields(%solution.track.name, %solution.exercise.name)
+)]
 async fn download_one_solution(
     client: api::v1::Client,
     solution: Cow<'static, Solution>,
@@ -158,9 +177,15 @@ async fn download_one_solution(
     args: &BackupArgs,
     limiter: Arc<Semaphore>,
 ) -> crate::Result<()> {
+    if !args.dry_run {
+        debug!("Starting solution backup");
+    }
+    trace!(?solution);
+
     let mut output_path = output_path;
     output_path.to_mut().push(&solution.track.name);
     output_path.to_mut().push(&solution.exercise.name);
+    trace!(output_path = %output_path.display());
 
     if fs::metadata(&output_path.as_ref())
         .await
@@ -168,62 +193,67 @@ async fn download_one_solution(
         .unwrap_or(false)
     {
         if args.force {
-            trace!(
-                solution.track.name,
-                solution.exercise.name,
-                "Solution already exists on disk; cleaning up...",
-            );
-            delete_directory_content(&output_path)
-                .await
-                .with_context(|| {
-                    format!("failed to clean up existing directory {}", output_path.display())
-                })?;
+            trace!("Solution already exists on disk; cleaning up...");
+            if !args.dry_run {
+                delete_directory_content(&output_path)
+                    .await
+                    .with_context(|| {
+                        format!("failed to clean up existing directory {}", output_path.display())
+                    })?;
+            }
         } else {
-            trace!(
-                solution.track.name,
-                solution.exercise.name,
-                "Solution already exists on disk; skipping",
-            );
+            trace!("Solution already exists on disk; skipping");
             return Ok(());
         }
     }
 
-    fs::create_dir_all(&output_path.as_ref())
-        .await
-        .with_context(|| {
-            format!(
-                "failed to create destination directory for solution to {}/{}: {}",
-                solution.track.name,
-                solution.exercise.name,
-                output_path.display(),
-            )
-        })?;
-
-    let files = get_files_to_backup(&client, &solution).await?;
-    debug!(?files);
-
-    let mut downloads = JoinSet::new();
-    for file in files {
-        let client = client.clone();
-        let solution = solution.clone();
-        let output_path = output_path.clone();
-        let limiter = limiter.clone();
-        downloads.spawn(async move {
-            let _permit = limiter
-                .acquire_owned()
-                .await
-                .expect("failed to acquire limiter semaphore");
-
-            download_one_file(client, &solution, file, &output_path).await
-        });
+    if !args.dry_run {
+        fs::create_dir_all(&output_path.as_ref())
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to create destination directory for solution to {}/{}: {}",
+                    solution.track.name,
+                    solution.exercise.name,
+                    output_path.display(),
+                )
+            })?;
     }
 
-    wait_for_all(&mut downloads).await?;
+    let files = get_files_to_backup(&client, &solution).await?;
+    if args.dry_run {
+        debug!("Files to backup: {}", files.join(", "));
+    }
+
+    if !args.dry_run || enabled!(Level::TRACE) {
+        let mut downloads = JoinSet::new();
+        for file in files {
+            let client = client.clone();
+            let solution = solution.clone();
+            let output_path = output_path.clone();
+            let limiter = limiter.clone();
+            let dry_run = args.dry_run;
+            downloads.spawn(async move {
+                let _permit = limiter
+                    .acquire_owned()
+                    .await
+                    .expect("failed to acquire limiter semaphore");
+
+                download_one_file(client, &solution, file, &output_path, dry_run).await
+            });
+        }
+
+        wait_for_all(&mut downloads).await?;
+    }
 
     Ok(())
 }
 
-#[instrument(skip_all, fields(%solution.track.name, %solution.exercise.name))]
+#[instrument(
+    skip_all,
+    fields(%solution.track.name, %solution.exercise.name),
+    ret(level = "trace")
+)]
 async fn get_files_to_backup(
     client: &api::v1::Client,
     solution: &Solution,
@@ -241,46 +271,57 @@ async fn get_files_to_backup(
         .files)
 }
 
-#[instrument(skip(client, solution, destination_path), fields(%solution.track.name, %solution.exercise.name))]
+#[instrument(
+    level = "trace",
+    skip_all,
+    fields(%solution.track.name, %solution.exercise.name, file)
+)]
 async fn download_one_file(
     client: api::v1::Client,
     solution: &Solution,
     file: String,
     destination_path: &Path,
+    dry_run: bool,
 ) -> crate::Result<()> {
     let mut file_stream = client.get_file(&solution.uuid, &file).await;
 
     let mut destination_file_path = destination_path.to_path_buf();
     destination_file_path.extend(file.split('/'));
+    trace!(destination_file_path = %destination_file_path.display());
 
-    if let Some(parent) = destination_file_path.parent() {
-        fs::create_dir_all(parent).await.with_context(|| {
-            format!("failed to make sure parent of file {} exists", destination_file_path.display())
+    if !dry_run {
+        if let Some(parent) = destination_file_path.parent() {
+            fs::create_dir_all(parent).await.with_context(|| {
+                format!(
+                    "failed to make sure parent of file {} exists",
+                    destination_file_path.display()
+                )
+            })?;
+        }
+
+        let destination_file = fs::File::create(&destination_file_path)
+            .await
+            .with_context(|| {
+                format!("failed to create local file {}", destination_file_path.display())
+            })?;
+        let mut destination_file = BufWriter::new(destination_file);
+
+        while let Some(bytes) = file_stream.next().await {
+            let bytes = bytes.with_context(|| {
+                format!(
+                    "failed to download file {} in solution to exercise {} of track {}",
+                    file, solution.exercise.name, solution.track.name
+                )
+            })?;
+            destination_file.write_all(&bytes).await.with_context(|| {
+                format!("failed to write data to file {}", destination_file_path.display())
+            })?;
+        }
+
+        destination_file.flush().await.with_context(|| {
+            format!("failed to flush data to file {}", destination_file_path.display())
         })?;
     }
-
-    let destination_file = fs::File::create(&destination_file_path)
-        .await
-        .with_context(|| {
-            format!("failed to create local file {}", destination_file_path.display())
-        })?;
-    let mut destination_file = BufWriter::new(destination_file);
-
-    while let Some(bytes) = file_stream.next().await {
-        let bytes = bytes.with_context(|| {
-            format!(
-                "failed to download file {} in solution to exercise {} of track {}",
-                file, solution.exercise.name, solution.track.name
-            )
-        })?;
-        destination_file.write_all(&bytes).await.with_context(|| {
-            format!("failed to write data to file {}", destination_file_path.display())
-        })?;
-    }
-
-    destination_file.flush().await.with_context(|| {
-        format!("failed to flush data to file {}", destination_file_path.display())
-    })?;
 
     Ok(())
 }
