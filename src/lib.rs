@@ -1,7 +1,6 @@
 mod command;
 mod error;
 
-pub(crate) mod credentials;
 pub(crate) mod exercism;
 pub(crate) mod fs;
 pub(crate) mod reqwest;

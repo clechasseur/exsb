@@ -1,3 +1,4 @@
+pub mod credentials;
 pub mod tracks;
 
 use mini_exercism::api;
