@@ -1,3 +1,5 @@
+//! Implementation of the [`Backup`](crate::command::Command::Backup) command.
+
 pub mod args;
 mod detail;
 
@@ -20,6 +22,10 @@ use crate::exercism::{get_v1_client, get_v2_client};
 use crate::reqwest::get_http_client;
 use crate::task::wait_for_all;
 
+/// Downloads all solutions for backup.
+///
+/// Uses the provided [`args`](BackupArgs) to determine where to store the backed up
+/// solutions, which solutions to download and whether to overwrite existing ones.
 #[instrument(skip_all)]
 pub async fn backup_solutions(args: Cow<'static, BackupArgs>) -> crate::Result<()> {
     info!("Starting Exercism solutions backup to {}", args.path.display());
@@ -39,8 +45,8 @@ pub async fn backup_solutions(args: Cow<'static, BackupArgs>) -> crate::Result<(
 
     let credentials = get_api_credentials(args.token.as_ref())?;
     let http_client = get_http_client()?;
-    let v1_client = get_v1_client(&http_client, &credentials);
-    let v2_client = get_v2_client(&http_client, &credentials);
+    let v1_client = get_v1_client(&http_client, &credentials, None);
+    let v2_client = get_v2_client(&http_client, &credentials, None);
 
     let tracks = get_tracks_to_backup(&v2_client, &args).await?;
     info!("Number of tracks to scan: {}", tracks.len());

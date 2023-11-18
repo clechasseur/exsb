@@ -1,3 +1,6 @@
+//! Implementation details of the [`Backup`](crate::command::Command::Backup) command pertaining
+//! to the Exercism API.
+
 use std::borrow::Cow;
 use std::panic::resume_unwind;
 use std::sync::Arc;
@@ -10,8 +13,10 @@ use tokio::task::JoinSet;
 use tracing::instrument;
 
 use crate::command::backup::args::BackupArgs;
+use crate::exercism::solutions::get_solution_files;
 use crate::exercism::tracks::{get_joined_tracks, get_solutions};
 
+/// Gets the list of tracks to backup, depending on [command-line arguments](BackupArgs).
 #[instrument(skip_all, ret(level = "trace"))]
 pub async fn get_tracks_to_backup(
     client: &api::v2::Client,
@@ -26,6 +31,7 @@ pub async fn get_tracks_to_backup(
         .collect())
 }
 
+/// Gets the list of solutions to backup for the given `track`, depending on [command-line arguments](BackupArgs).
 #[instrument(skip_all, ret(level = "trace"))]
 pub async fn get_solutions_to_backup(
     client: &api::v2::Client,
@@ -72,6 +78,7 @@ pub async fn get_solutions_to_backup(
     Ok(solutions)
 }
 
+/// Gets the list of files to backup for the given [`Solution`].
 #[instrument(
     skip_all,
     fields(%solution.track.name, %solution.exercise.name),
@@ -81,15 +88,12 @@ pub async fn get_files_to_backup(
     client: &api::v1::Client,
     solution: &Solution,
 ) -> crate::Result<Vec<String>> {
-    Ok(client
-        .get_solution(&solution.uuid)
+    get_solution_files(client, &solution.uuid)
         .await
         .with_context(|| {
             format!(
                 "failed to get list of files for solution {}/{}",
-                solution.track.name, solution.exercise.name,
+                solution.track.name, solution.exercise.name
             )
-        })?
-        .solution
-        .files)
+        })
 }

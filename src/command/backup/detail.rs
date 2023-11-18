@@ -1,3 +1,5 @@
+//! Implementation details for the [`Backup`](crate::command::Command::Backup) command.
+
 pub mod exercism;
 pub mod fs;
 
@@ -18,6 +20,17 @@ use crate::command::backup::args::BackupArgs;
 use crate::command::backup::detail::exercism::get_files_to_backup;
 use crate::task::wait_for_all;
 
+/// Downloads all files submitted for the given [`Solution`] in the given `output_path`.
+///
+/// Whether an existing solution will be overwritten depends on the [`force`](BackupArgs::force) flag.
+///
+/// # Return values
+///
+/// | Outcome                                        | Return value |
+/// |------------------------------------------------|--------------|
+/// | Solution is downloaded successfully            | `Ok(true)`   |
+/// | Solution already exists on disk and is skipped | `Ok(false)`  |
+/// | Error occurs during a download                 | `Err(_)`     |
 #[instrument(
     level = "debug",
     skip_all,
@@ -109,6 +122,7 @@ pub async fn download_one_solution(
     Ok(true)
 }
 
+/// Downloads the given `file` for the given [`Solution`] to the given `destination_path`.
 #[instrument(
     level = "trace",
     skip_all,

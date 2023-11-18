@@ -1,9 +1,12 @@
+//! Definition of command-line arguments for the [`Backup`](crate::command::Command::Backup) command.
+
 use std::path::PathBuf;
 
 use clap::{Args, ValueEnum};
 use mini_exercism::api;
 use mini_exercism::api::v2::Solution;
 
+/// Command-line arguments accepted by the [`Backup`](crate::command::Command::Backup) command.
 #[derive(Debug, Clone, Args)]
 pub struct BackupArgs {
     /// Path where to store the downloaded solutions
@@ -38,6 +41,7 @@ pub struct BackupArgs {
     pub max_downloads: usize,
 }
 
+/// Possible solution status to filter for (see [`BackupArgs::status`]).
 #[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
 pub enum SolutionStatus {
     /// At least one iteration has been submitted, but exercise has not been marked as complete
@@ -53,6 +57,8 @@ pub enum SolutionStatus {
 impl TryFrom<api::v2::SolutionStatus> for SolutionStatus {
     type Error = ();
 
+    /// Converts from the Exercism API's [`SolutionStatus`](api::v2::SolutionStatus)
+    /// to our CLI's [`SolutionStatus`] type.
     fn try_from(value: api::v2::SolutionStatus) -> Result<Self, Self::Error> {
         match value {
             api::v2::SolutionStatus::Iterated => Ok(SolutionStatus::Submitted),
@@ -64,20 +70,24 @@ impl TryFrom<api::v2::SolutionStatus> for SolutionStatus {
 }
 
 impl BackupArgs {
+    /// Determines if the given `track` should be backed up.
     pub fn track_matches(&self, track: &str) -> bool {
         self.track.is_empty() || self.track.iter().any(|t| t == track)
     }
 
+    /// Determines if the given [`Solution`] should be backed up.
     pub fn solution_matches(&self, solution: &Solution) -> bool {
         self.solution_status_matches(solution.status.try_into().ok())
             && self.exercise_matches(&solution.exercise.name)
     }
 
+    /// Determines if a solution should be backed up according to its [`status`](SolutionStatus).
     fn solution_status_matches(&self, solution_status: Option<SolutionStatus>) -> bool {
         self.status == SolutionStatus::Submitted
             || solution_status.map_or(false, |st| st >= self.status)
     }
 
+    /// Determines if an exercise should be backed up.
     fn exercise_matches(&self, exercise_name: &str) -> bool {
         self.exercise.is_empty() || self.exercise.iter().any(|e| e == exercise_name)
     }
