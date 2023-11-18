@@ -1,3 +1,5 @@
+//! Definition of supported CLI commands.
+
 mod backup;
 
 use std::borrow::Cow;
@@ -7,6 +9,7 @@ use clap::Subcommand;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::backup_solutions;
 
+/// Possible commands supported by our CLI application.
 #[derive(Debug, Subcommand)]
 pub enum Command {
     /// Download Exercism.org solutions for backup
@@ -25,6 +28,9 @@ pub enum Command {
 }
 
 impl Command {
+    /// Execute this [`Command`].
+    ///
+    /// This method is provided explicitly in order to make it `async`.
     pub async fn execute(self) -> crate::Result<()> {
         match self {
             Command::Backup(args) => backup_solutions(Cow::<'static, _>::Owned(args)).await,

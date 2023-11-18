@@ -16,7 +16,6 @@ use tracing::{debug, enabled, instrument, trace, Level};
 
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::detail::exercism::get_files_to_backup;
-use crate::fs::delete_directory_content;
 use crate::task::wait_for_all;
 
 #[instrument(
@@ -49,7 +48,7 @@ pub async fn download_one_solution(
         if args.force {
             trace!("Solution already exists on disk; cleaning up...");
             if !args.dry_run {
-                delete_directory_content(&output_path)
+                tokio::fs::remove_dir_all(&output_path.as_ref())
                     .await
                     .with_context(|| {
                         format!("failed to clean up existing directory {}", output_path.display())
@@ -74,7 +73,14 @@ pub async fn download_one_solution(
             })?;
     }
 
-    let files = get_files_to_backup(&client, &solution).await?;
+    let files = {
+        let _permit = limiter
+            .acquire()
+            .await
+            .expect("failed to acquire limiter semaphore");
+
+        get_files_to_backup(&client, &solution).await?
+    };
     if args.dry_run {
         debug!("Files to backup: {}", files.join(", "));
     }
@@ -89,7 +95,7 @@ pub async fn download_one_solution(
             let dry_run = args.dry_run;
             downloads.spawn(async move {
                 let _permit = limiter
-                    .acquire_owned()
+                    .acquire()
                     .await
                     .expect("failed to acquire limiter semaphore");
 

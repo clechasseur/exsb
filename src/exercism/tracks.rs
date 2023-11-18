@@ -1,7 +1,12 @@
+//! Helpers for getting language track information from the Exercism API.
+
 use mini_exercism::api;
 use mini_exercism::api::v2::TrackStatusFilter::Joined;
 use mini_exercism::api::v2::{ExerciseFilters, Solution, TrackFilters};
 
+/// Returns the name of all language tracks joined by the user.
+///
+/// The names returned are the internal names, or "slug". See [`Track::name`](api::v2::Track::name).
 pub async fn get_joined_tracks(client: &api::v2::Client) -> crate::Result<Vec<String>> {
     let filters = TrackFilters::builder().status(Joined).build();
     let tracks = client.get_tracks(Some(filters)).await?.tracks;
@@ -9,6 +14,7 @@ pub async fn get_joined_tracks(client: &api::v2::Client) -> crate::Result<Vec<St
     Ok(tracks.into_iter().map(|track| track.name).collect())
 }
 
+/// Returns all solutions submitted by the user for the given track.
 pub async fn get_solutions<T>(client: &api::v2::Client, track: T) -> crate::Result<Vec<Solution>>
 where
     T: AsRef<str>,
