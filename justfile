@@ -9,6 +9,8 @@ cargo := if trimmed_toolchain != "" {
     "cargo"
 }
 
+open := '--open'
+
 default:
     @just --list
 
@@ -52,8 +54,11 @@ msrv:
     cargo msrv -- cargo check --workspace --lib --bins --all-features
     {{ if path_exists("Cargo.lock.bak") == "true" { `just post-msrv` } else { ` ` } }}
 
-doc:
-    cargo +nightly doc --workspace --all-features --open
+doc $RUSTDOCFLAGS="-D warnings":
+    {{cargo}} doc --workspace --all-features {{open}}
+
+doc-coverage $RUSTDOCFLAGS="-Z unstable-options --show-coverage":
+    cargo +nightly doc --no-deps --workspace --all-features
 
 test-package:
     {{cargo}} publish --dry-run
