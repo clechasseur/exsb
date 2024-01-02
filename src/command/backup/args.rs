@@ -3,8 +3,8 @@
 use std::path::PathBuf;
 
 use clap::{Args, ValueEnum};
-use mini_exercism::api;
-use mini_exercism::api::v2::Solution;
+use mini_exercism::api::v2::solution;
+use mini_exercism::api::v2::solution::Solution;
 
 /// Command-line arguments accepted by the [`Backup`](crate::command::Command::Backup) command.
 #[derive(Debug, Clone, Args)]
@@ -54,16 +54,16 @@ pub enum SolutionStatus {
     Published,
 }
 
-impl TryFrom<api::v2::SolutionStatus> for SolutionStatus {
+impl TryFrom<solution::Status> for SolutionStatus {
     type Error = ();
 
     /// Converts from the Exercism API's [`SolutionStatus`](api::v2::SolutionStatus)
     /// to our CLI's [`SolutionStatus`] type.
-    fn try_from(value: api::v2::SolutionStatus) -> Result<Self, Self::Error> {
+    fn try_from(value: solution::Status) -> Result<Self, Self::Error> {
         match value {
-            api::v2::SolutionStatus::Iterated => Ok(SolutionStatus::Submitted),
-            api::v2::SolutionStatus::Completed => Ok(SolutionStatus::Completed),
-            api::v2::SolutionStatus::Published => Ok(SolutionStatus::Published),
+            solution::Status::Iterated => Ok(SolutionStatus::Submitted),
+            solution::Status::Completed => Ok(SolutionStatus::Completed),
+            solution::Status::Published => Ok(SolutionStatus::Published),
             _ => Err(()),
         }
     }

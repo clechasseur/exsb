@@ -7,7 +7,7 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use mini_exercism::api;
-use mini_exercism::api::v2::Solution;
+use mini_exercism::api::v2::solution::Solution;
 use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::instrument;
