@@ -21,7 +21,7 @@ include = [ "src/**/*", "tests/**/*", "Cargo.lock", "Cargo.toml", "LICENSE", "RE
 
 [dependencies]
 anyhow = "1.0.79"
-clap = { version = "4.4.12", features = ["derive"] }
+clap = { version = "4.4.16", features = ["derive"] }
 clap-verbosity-flag = "2.1.1"
 futures = "0.3.30"
 log = "0.4.20"
