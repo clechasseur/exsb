@@ -33,5 +33,5 @@ tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 [dev-dependencies]
 assert_cmd = "2.0.12"
-assert_fs = "1.1.0"
+assert_fs = "1.1.1"
 assert_matches = "1.5.0"
