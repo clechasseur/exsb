@@ -2,8 +2,8 @@
 
 use mini_exercism::api;
 use mini_exercism::api::v2::solution::Solution;
-use mini_exercism::api::v2::{exercises, tracks};
 use mini_exercism::api::v2::tracks::StatusFilter::Joined;
+use mini_exercism::api::v2::{exercises, tracks};
 
 /// Returns the name of all language tracks joined by the user.
 ///
@@ -20,7 +20,9 @@ pub async fn get_solutions<T>(client: &api::v2::Client, track: T) -> crate::Resu
 where
     T: AsRef<str>,
 {
-    let filters = exercises::Filters::builder().include_solutions(true).build();
+    let filters = exercises::Filters::builder()
+        .include_solutions(true)
+        .build();
 
     Ok(client
         .get_exercises(track.as_ref(), Some(filters))
