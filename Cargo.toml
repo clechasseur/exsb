@@ -21,17 +21,17 @@ include = [ "src/**/*", "tests/**/*", "Cargo.lock", "Cargo.toml", "LICENSE", "RE
 
 [dependencies]
 anyhow = "1.0.79"
-clap = { version = "4.4.12", features = ["derive"] }
+clap = { version = "4.4.17", features = ["derive"] }
 clap-verbosity-flag = "2.1.1"
 futures = "0.3.30"
 log = "0.4.20"
-mini_exercism = { version = "2.0.0", features = ["cli"] }
+mini_exercism = { version = "2.1.0", features = ["cli"] }
 reqwest = "0.11.23"
 tokio = { version = "1.35.1", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
 
 [dev-dependencies]
-assert_cmd = "2.0.12"
-assert_fs = "1.1.0"
+assert_cmd = "2.0.13"
+assert_fs = "1.1.1"
 assert_matches = "1.5.0"
