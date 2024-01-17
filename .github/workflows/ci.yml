@@ -56,11 +56,16 @@ jobs:
       matrix:
         toolchain: [ 1.70.0 ]
         os: [ ubuntu, macos, windows ]
+        ignore-lock: [ false, true ]
         all-features: [ false ]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Remove Cargo.lock
+        if: ${{ matrix.ignore-lock }}
+        run: rm Cargo.lock
 
       - name: Install Rust nightly toolchain
         if: ${{ matrix.toolchain != 'nightly' }}
@@ -84,13 +89,14 @@ jobs:
           tool: cargo-hack,cargo-minimal-versions
 
       - name: Rust Cache
+        if: ${{ matrix.toolchain != 'nightly' }}
         uses: Swatinem/rust-cache@v2
         with:
-          prefix-key: v4-rust
-          key: all-features-${{ matrix.all-features }}-msrv-cargo-files-${{ hashFiles('**/Cargo.*.msrv') }}
+          prefix-key: v5-rust
+          key: ignore-lock-${{ matrix.ignore-lock }}-all-features-${{ matrix.all-features }}
 
       - name: Run checks using cargo-minimal-versions
-        run: just all_features=${{ matrix.all-features }} check-minimal
+        run: just all_features=${{ matrix.all-features }} check-minimal-only
 
   build:
     name: Build for Rust ${{ matrix.toolchain }}${{ matrix.experimental && ' (experimental)' || '' }} on ${{ matrix.os }}${{ matrix.ignore-lock && ' without Cargo.lock' || '' }}${{ matrix.all-features && ' with all features' || '' }}
@@ -99,7 +105,7 @@ jobs:
       matrix:
         toolchain: [ 1.70.0, stable, beta, nightly ]
         os: [ ubuntu, macos, windows ]
-        ignore-lock: [ false ]
+        ignore-lock: [ false, true ]
         all-features: [ false ]
         include:
           - experimental: false
