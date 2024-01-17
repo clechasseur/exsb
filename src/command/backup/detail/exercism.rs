@@ -12,6 +12,7 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
+use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::exercism::solutions::get_solution_files;
 use crate::exercism::tracks::{get_joined_tracks, get_solutions};
@@ -21,7 +22,7 @@ use crate::exercism::tracks::{get_joined_tracks, get_solutions};
 pub async fn get_tracks_to_backup(
     client: &api::v2::Client,
     args: &BackupArgs,
-) -> crate::Result<Vec<Cow<'static, str>>> {
+) -> Result<Vec<Cow<'static, str>>> {
     Ok(get_joined_tracks(client)
         .await
         .with_context(|| "failed to get list of tracks joined by user")?
@@ -38,7 +39,7 @@ pub async fn get_solutions_to_backup(
     tracks: &Vec<Cow<'static, str>>,
     args: &BackupArgs,
     limiter: &Arc<Semaphore>,
-) -> crate::Result<Vec<Cow<'static, Solution>>> {
+) -> Result<Vec<Cow<'static, Solution>>> {
     let mut solutions = Vec::new();
     {
         let mut downloads = JoinSet::new();
@@ -87,7 +88,7 @@ pub async fn get_solutions_to_backup(
 pub async fn get_files_to_backup(
     client: &api::v1::Client,
     solution: &Solution,
-) -> crate::Result<Vec<String>> {
+) -> Result<Vec<String>> {
     get_solution_files(client, &solution.uuid)
         .await
         .with_context(|| {

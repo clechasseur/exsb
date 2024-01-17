@@ -4,13 +4,15 @@ use std::panic::resume_unwind;
 
 use tokio::task::JoinSet;
 
+use crate::Result;
+
 /// Waits until all tasks in a [`JoinSet`] are completed, or until one of them fails.
 ///
 /// If all tasks are successful (e.g. return [`Ok(())`]), the function will return [`Ok(())`].
 /// Otherwise, the function will return [`Err`] with the error of the first failing task.
 /// Any remaining task in the [`JoinSet`] will be left unchecked (and thus calcelled if the
 /// [`JoinSet`] is later dropped).
-pub async fn wait_for_all(join_set: &mut JoinSet<crate::Result<()>>) -> crate::Result<()> {
+pub async fn wait_for_all(join_set: &mut JoinSet<Result<()>>) -> Result<()> {
     while let Some(join_result) = join_set.join_next().await {
         match join_result {
             Ok(closure_result) => closure_result?,

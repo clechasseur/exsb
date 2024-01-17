@@ -13,6 +13,7 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::{enabled, event_enabled, info, instrument, trace, Level};
 
+use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::detail::download_one_solution;
 use crate::command::backup::detail::exercism::{get_solutions_to_backup, get_tracks_to_backup};
@@ -27,7 +28,7 @@ use crate::task::wait_for_all;
 /// Uses the provided [`args`](BackupArgs) to determine where to store the backed up
 /// solutions, which solutions to download and whether to overwrite existing ones.
 #[instrument(skip_all)]
-pub async fn backup_solutions(args: Cow<'static, BackupArgs>) -> crate::Result<()> {
+pub async fn backup_solutions(args: Cow<'static, BackupArgs>) -> Result<()> {
     info!("Starting Exercism solutions backup to {}", args.path.display());
     trace!(?args);
 

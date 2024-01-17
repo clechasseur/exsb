@@ -5,10 +5,12 @@ use mini_exercism::api::v2::solution::Solution;
 use mini_exercism::api::v2::tracks::StatusFilter::Joined;
 use mini_exercism::api::v2::{exercises, tracks};
 
+use crate::Result;
+
 /// Returns the name of all language tracks joined by the user.
 ///
 /// The names returned are the internal names, or "slug". See [`Track::name`](api::v2::Track::name).
-pub async fn get_joined_tracks(client: &api::v2::Client) -> crate::Result<Vec<String>> {
+pub async fn get_joined_tracks(client: &api::v2::Client) -> Result<Vec<String>> {
     let filters = tracks::Filters::builder().status(Joined).build();
     let tracks = client.get_tracks(Some(filters)).await?.tracks;
 
@@ -16,7 +18,7 @@ pub async fn get_joined_tracks(client: &api::v2::Client) -> crate::Result<Vec<St
 }
 
 /// Returns all solutions submitted by the user for the given track.
-pub async fn get_solutions<T>(client: &api::v2::Client, track: T) -> crate::Result<Vec<Solution>>
+pub async fn get_solutions<T>(client: &api::v2::Client, track: T) -> Result<Vec<Solution>>
 where
     T: AsRef<str>,
 {

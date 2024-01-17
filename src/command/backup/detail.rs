@@ -16,6 +16,7 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::{debug, enabled, instrument, trace, Level};
 
+use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::detail::exercism::get_files_to_backup;
 use crate::task::wait_for_all;
@@ -42,7 +43,7 @@ pub async fn download_one_solution(
     output_path: Cow<'static, PathBuf>,
     args: &BackupArgs,
     limiter: Arc<Semaphore>,
-) -> crate::Result<bool> {
+) -> Result<bool> {
     if !args.dry_run {
         debug!("Starting solution backup");
     }
@@ -134,7 +135,7 @@ pub async fn download_one_file(
     file: String,
     destination_path: &Path,
     dry_run: bool,
-) -> crate::Result<()> {
+) -> Result<()> {
     let mut file_stream = client.get_file(&solution.uuid, &file).await;
 
     let mut destination_file_path = destination_path.to_path_buf();

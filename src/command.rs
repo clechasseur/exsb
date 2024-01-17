@@ -6,6 +6,7 @@ use std::borrow::Cow;
 
 use clap::Subcommand;
 
+use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::backup_solutions;
 
@@ -31,7 +32,7 @@ impl Command {
     /// Execute this [`Command`].
     ///
     /// This method is provided explicitly in order to make it `async`.
-    pub async fn execute(self) -> crate::Result<()> {
+    pub async fn execute(self) -> Result<()> {
         match self {
             Command::Backup(args) => backup_solutions(Cow::<'static, _>::Owned(args)).await,
         }

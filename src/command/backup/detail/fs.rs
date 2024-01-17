@@ -6,6 +6,8 @@ use std::path::Path;
 use anyhow::Context;
 use tracing::instrument;
 
+use crate::Result;
+
 /// Creates directories for all `tracks` to backup in the given `output_path`.
 ///
 /// This can be used to pre-create the directories before launching asynchronous
@@ -15,7 +17,7 @@ use tracing::instrument;
 pub async fn create_track_directories(
     output_path: &Path,
     tracks: &Vec<Cow<'_, str>>,
-) -> crate::Result<()> {
+) -> Result<()> {
     for track in tracks {
         let mut destination_path = output_path.to_path_buf();
         destination_path.push(track.as_ref());
