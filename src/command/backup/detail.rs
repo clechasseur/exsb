@@ -16,10 +16,10 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::{debug, enabled, instrument, trace, Level};
 
-use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::detail::exercism::get_files_to_backup;
 use crate::task::wait_for_all;
+use crate::Result;
 
 /// Downloads all files submitted for the given [`Solution`] in the given `output_path`.
 ///

@@ -13,7 +13,6 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::{enabled, event_enabled, info, instrument, trace, Level};
 
-use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::detail::download_one_solution;
 use crate::command::backup::detail::exercism::{get_solutions_to_backup, get_tracks_to_backup};
@@ -22,6 +21,7 @@ use crate::exercism::credentials::get_api_credentials;
 use crate::exercism::{get_v1_client, get_v2_client};
 use crate::reqwest::get_http_client;
 use crate::task::wait_for_all;
+use crate::Result;
 
 /// Downloads all solutions for backup.
 ///

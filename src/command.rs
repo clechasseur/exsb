@@ -6,9 +6,9 @@ use std::borrow::Cow;
 
 use clap::Subcommand;
 
-use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::command::backup::backup_solutions;
+use crate::Result;
 
 /// Possible commands supported by our CLI application.
 #[derive(Debug, Subcommand)]

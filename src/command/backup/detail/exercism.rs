@@ -12,10 +12,10 @@ use tokio::sync::Semaphore;
 use tokio::task::JoinSet;
 use tracing::instrument;
 
-use crate::Result;
 use crate::command::backup::args::BackupArgs;
 use crate::exercism::solutions::get_solution_files;
 use crate::exercism::tracks::{get_joined_tracks, get_solutions};
+use crate::Result;
 
 /// Gets the list of tracks to backup, depending on [command-line arguments](BackupArgs).
 #[instrument(skip_all, ret(level = "trace"))]
