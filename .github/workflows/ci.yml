@@ -19,15 +19,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust with clippy
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          toolchain: stable
           components: clippy
-
-      - name: Output Rust toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
-          cargo clippy --version
+          cache: false
 
       - name: Run clippy
         uses: clechasseur/rs-clippy-check@v3
@@ -42,23 +38,19 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust nightly with rustfmt
-        uses: dtolnay/rust-toolchain@nightly
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
+          toolchain: nightly
           components: rustfmt
-
-      - name: Output Rust toolchain info
-        run: |
-          cargo +nightly --version --verbose
-          rustc +nightly --version
-          cargo +nightly fmt --version
+          cache: false
 
       - name: Run Rustfmt
         uses: clechasseur/rs-fmt-check@v2
         with:
           args: --all
 
-  build-msrv:
-    name: MSRV build for Rust ${{ matrix.toolchain }} on ${{ matrix.os }}${{ matrix.all-features && ' with all features' || '' }}
+  msrv-check:
+    name: MSRV check for Rust ${{ matrix.toolchain }} on ${{ matrix.os }}${{ matrix.all-features && ' with all features' || '' }}
     strategy:
       fail-fast: false
       matrix:
@@ -70,40 +62,35 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Install Rust nightly toolchain
+        if: ${{ matrix.toolchain != 'nightly' }}
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: nightly
+          cache: false
+
       - name: Install Rust toolchain ${{ matrix.toolchain }}
-        uses: dtolnay/rust-toolchain@master
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
+          cache: false
 
       - name: Install just
         uses: extractions/setup-just@v1
 
-      - name: Output Rust toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
+      - name: Install cargo-minimal-versions
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-hack,cargo-minimal-versions
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
         with:
-          prefix-key: v1-rust
+          prefix-key: v4-rust
           key: all-features-${{ matrix.all-features }}-msrv-cargo-files-${{ hashFiles('**/Cargo.*.msrv') }}
 
-      - name: Check if we need to install MSRV cargo files
-        id: check_msrv_cargo_files
-        uses: andstor/file-existence-action@v2
-        with:
-          files: "Cargo.lock.msrv, Cargo.toml.msrv"
-
-      - name: Install MSRV cargo files
-        if: ${{ steps.check_msrv_cargo_files.outputs.files_exists == 'true' }}
-        run: just pre-msrv
-
-      - name: Run checks
-        uses: clechasseur/rs-cargo@v2
-        with:
-          command: check
-          args: --workspace --lib --bins ${{ matrix.all-features && '--all-features' || '' }}
+      - name: Run checks using cargo-minimal-versions
+        run: just all_features=${{ matrix.all-features }} check-minimal
 
   build:
     name: Build for Rust ${{ matrix.toolchain }}${{ matrix.experimental && ' (experimental)' || '' }} on ${{ matrix.os }}${{ matrix.ignore-lock && ' without Cargo.lock' || '' }}${{ matrix.all-features && ' with all features' || '' }}
@@ -131,14 +118,13 @@ jobs:
         run: rm Cargo.lock
 
       - name: Install Rust toolchain ${{ matrix.toolchain }}
-        uses: dtolnay/rust-toolchain@master
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
+          cache: false
 
-      - name: Output Rust toolchain info
-        run: |
-          cargo --version --verbose
-          rustc --version
+      - name: Install just
+        uses: extractions/setup-just@v1
 
       - name: Rust Cache
         if: ${{ !matrix.experimental }}
@@ -148,16 +134,10 @@ jobs:
           key: ignore-lock-${{ matrix.ignore-lock }}-all-features-${{ matrix.all-features }}
 
       - name: Run checks
-        uses: clechasseur/rs-cargo@v2
-        with:
-          command: check
-          args: --workspace --all-targets ${{ matrix.all-features && '--all-features' || '' }}
+        run: just all_features=${{ matrix.all-features }} check
 
       - name: Run tests
-        uses: clechasseur/rs-cargo@v2
-        with:
-          command: test
-          args: --workspace ${{ matrix.all-features && '--all-features' || '' }}
+        run: just all_features=${{ matrix.all-features }} test
 
   tarpaulin:
     name: Code coverage
@@ -166,8 +146,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache: false
 
       - name: Install cargo-tarpaulin
         uses: taiki-e/install-action@v2
@@ -215,9 +198,13 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust toolchain ${{ matrix.toolchain }}
-        uses: dtolnay/rust-toolchain@master
+        uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
+          cache: false
+
+      - name: Install just
+        uses: extractions/setup-just@v1
 
       - name: Rust Cache
         if: ${{ !matrix.experimental }}
@@ -225,28 +212,8 @@ jobs:
         with:
           cache-targets: false
 
-      - name: Install just
-        uses: extractions/setup-just@v1
-
       - name: Generate doc using rustdoc
-        run: just open='' doc
-
-  doc-coverage:
-    name: Rustdoc coverage check
-    runs-on: ubuntu-latest
-    continue-on-error: true
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Rust nightly
-        uses: dtolnay/rust-toolchain@nightly
-
-      - name: Install just
-        uses: extractions/setup-just@v1
-
-      - name: Check doc coverage
-        run: just doc-coverage
+        run: just doc
 
   publish-dry-run:
     name: Publish dry-run
@@ -256,7 +223,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install Rust
-        uses: dtolnay/rust-toolchain@stable
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          cache: false
 
       - name: Install just
         uses: extractions/setup-just@v1
@@ -267,4 +237,7 @@ jobs:
           cache-targets: false
 
       - name: Perform publish dry-run
-        run: just test-package
+        uses: clechasseur/rs-cargo@v2
+        with:
+          command: publish
+          args: --dry-run
