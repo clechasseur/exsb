@@ -51,21 +51,8 @@ doc $RUSTDOCFLAGS="-D warnings":
 doc-coverage $RUSTDOCFLAGS="-Z unstable-options --show-coverage":
     cargo +nightly doc --no-deps --workspace {{all_features_flag}} {{message_format_flag}}
 
-backup-lockfile lockfile_bak="Cargo.lock.bak":
-    {{ if path_exists(lockfile_bak) == "true" { "rm " + lockfile_bak } else { "" } }}
-    {{ if path_exists("Cargo.lock") == "true" { "mv Cargo.lock " + lockfile_bak } else { "" } }}
-
-restore-lockfile lockfile_bak="Cargo.lock.bak":
-    {{ if path_exists("Cargo.lock") == "true" { "rm Cargo.lock" } else { "" } }}
-    {{ if path_exists(lockfile_bak) == "true" { "mv " + lockfile_bak + " Cargo.lock" } else { "" } }}
-
-check-minimal-only:
-    {{cargo}} minimal-versions check --workspace --lib --bins {{all_features_flag}} {{message_format_flag}}
-
-check-minimal: backup-lockfile check-minimal-only restore-lockfile
-
-msrv: (backup-lockfile "Cargo.lock.bak.msrv") && (restore-lockfile "Cargo.lock.bak.msrv")
-    cargo msrv -- just check-minimal
+msrv:
+    cargo msrv -- cargo check --workspace --lib --bins {{all_features_flag}}
 
 test-package:
     {{cargo}} publish --dry-run
