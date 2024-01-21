@@ -6,12 +6,10 @@
 #![deny(rustdoc::private_intra_doc_links)]
 #![cfg_attr(any(nightly_rustc, docsrs), feature(doc_cfg))]
 
-mod command;
+pub mod command;
+pub(crate) mod download_limiter;
 pub mod error;
-
-pub(crate) mod exercism;
-pub(crate) mod reqwest;
-pub(crate) mod task;
+pub(crate) mod task_pool;
 
 use std::str::FromStr;
 

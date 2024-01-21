@@ -1,13 +1,11 @@
 //! Definition of supported CLI commands.
 
-mod backup;
-
-use std::borrow::Cow;
+pub mod backup;
 
 use clap::Subcommand;
 
 use crate::command::backup::args::BackupArgs;
-use crate::command::backup::backup_solutions;
+use crate::command::backup::BackupCommand;
 use crate::Result;
 
 /// Possible commands supported by our CLI application.
@@ -34,7 +32,10 @@ impl Command {
     /// This method is provided explicitly in order to make it `async`.
     pub async fn execute(self) -> Result<()> {
         match self {
-            Command::Backup(args) => backup_solutions(Cow::<'static, _>::Owned(args)).await,
+            Command::Backup(args) => {
+                let backup_command = BackupCommand::new(args, None)?;
+                BackupCommand::execute(backup_command).await
+            },
         }
     }
 }

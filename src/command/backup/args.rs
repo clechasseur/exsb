@@ -1,4 +1,4 @@
-//! Definition of command-line arguments for the [`Backup`](crate::command::Command::Backup) command.
+//! Arguments that can be passed to the [`Backup`](crate::command::Command::Backup) command.
 
 use std::path::PathBuf;
 
@@ -54,40 +54,26 @@ pub enum SolutionStatus {
     Published,
 }
 
-impl TryFrom<solution::Status> for SolutionStatus {
-    type Error = ();
-
-    /// Converts from the Exercism API's [`SolutionStatus`](api::v2::SolutionStatus)
-    /// to our CLI's [`SolutionStatus`] type.
-    fn try_from(value: solution::Status) -> Result<Self, Self::Error> {
+impl From<SolutionStatus> for solution::Status {
+    fn from(value: SolutionStatus) -> Self {
         match value {
-            solution::Status::Iterated => Ok(SolutionStatus::Submitted),
-            solution::Status::Completed => Ok(SolutionStatus::Completed),
-            solution::Status::Published => Ok(SolutionStatus::Published),
-            _ => Err(()),
+            SolutionStatus::Submitted => solution::Status::Iterated,
+            SolutionStatus::Completed => solution::Status::Completed,
+            SolutionStatus::Published => solution::Status::Published,
         }
     }
 }
 
 impl BackupArgs {
-    /// Determines if the given `track` should be backed up.
-    pub fn track_matches(&self, track: &str) -> bool {
-        self.track.is_empty() || self.track.iter().any(|t| t == track)
-    }
-
     /// Determines if the given [`Solution`] should be backed up.
     pub fn solution_matches(&self, solution: &Solution) -> bool {
-        self.solution_status_matches(solution.status.try_into().ok())
-            && self.exercise_matches(&solution.exercise.name)
+        self.track_matches(&solution.track.name) && self.exercise_matches(&solution.exercise.name)
     }
 
-    /// Determines if a solution should be backed up according to its [`status`](SolutionStatus).
-    fn solution_status_matches(&self, solution_status: Option<SolutionStatus>) -> bool {
-        self.status == SolutionStatus::Submitted
-            || solution_status.map_or(false, |st| st >= self.status)
+    fn track_matches(&self, track_name: &str) -> bool {
+        self.track.is_empty() || self.track.iter().any(|t| t == track_name)
     }
 
-    /// Determines if an exercise should be backed up.
     fn exercise_matches(&self, exercise_name: &str) -> bool {
         self.exercise.is_empty() || self.exercise.iter().any(|e| e == exercise_name)
     }
