@@ -446,6 +446,7 @@ dependencies = [
  "assert_matches",
  "clap",
  "clap-verbosity-flag",
+ "futures",
  "mini_exercism",
  "reqwest",
  "tokio",

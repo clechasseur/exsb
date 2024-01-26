@@ -54,12 +54,15 @@ pub enum SolutionStatus {
     Published,
 }
 
-impl From<SolutionStatus> for solution::Status {
-    fn from(value: SolutionStatus) -> Self {
+impl TryFrom<solution::Status> for SolutionStatus {
+    type Error = ();
+
+    fn try_from(value: solution::Status) -> Result<Self, Self::Error> {
         match value {
-            SolutionStatus::Submitted => solution::Status::Iterated,
-            SolutionStatus::Completed => solution::Status::Completed,
-            SolutionStatus::Published => solution::Status::Published,
+            solution::Status::Iterated => Ok(SolutionStatus::Submitted),
+            solution::Status::Completed => Ok(SolutionStatus::Completed),
+            solution::Status::Published => Ok(SolutionStatus::Published),
+            _ => Err(()),
         }
     }
 }
@@ -67,7 +70,8 @@ impl From<SolutionStatus> for solution::Status {
 impl BackupArgs {
     /// Determines if the given [`Solution`] should be backed up.
     pub fn solution_matches(&self, solution: &Solution) -> bool {
-        self.track_matches(&solution.track.name) && self.exercise_matches(&solution.exercise.name)
+        self.track_matches(&solution.track.name) && self.exercise_matches(&solution.exercise.name) &&
+            self.solution_status_matches(solution.status.try_into().ok())
     }
 
     fn track_matches(&self, track_name: &str) -> bool {
@@ -76,5 +80,10 @@ impl BackupArgs {
 
     fn exercise_matches(&self, exercise_name: &str) -> bool {
         self.exercise.is_empty() || self.exercise.iter().any(|e| e == exercise_name)
+    }
+
+    fn solution_status_matches(&self, solution_status: Option<SolutionStatus>) -> bool {
+        self.status == SolutionStatus::Submitted
+            || solution_status.map_or(false, |st| st >= self.status)
     }
 }
