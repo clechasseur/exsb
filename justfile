@@ -56,3 +56,6 @@ msrv:
 
 test-package:
     {{cargo}} publish --dry-run
+
+run *extra_args:
+    {{cargo}} run -- {{extra_args}}
