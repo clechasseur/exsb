@@ -23,7 +23,7 @@ jobs:
 
       - name: Check if we need to audit MSRV manifest
         id: check_msrv_manifest
-        uses: andstor/file-existence-action@v2
+        uses: andstor/file-existence-action@v3
         with:
           files: "Cargo.toml.msrv"
 
