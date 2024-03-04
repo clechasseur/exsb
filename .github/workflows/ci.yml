@@ -81,7 +81,7 @@ jobs:
           cache: false
 
       - name: Install just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v2
 
       - name: Rust Cache
         if: ${{ !matrix.experimental }}
@@ -161,7 +161,7 @@ jobs:
           cache: false
 
       - name: Install just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v2
 
       - name: Rust Cache
         if: ${{ !matrix.experimental }}
@@ -186,7 +186,7 @@ jobs:
           cache: false
 
       - name: Install just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v2
 
       - name: Rust Cache
         uses: Swatinem/rust-cache@v2
