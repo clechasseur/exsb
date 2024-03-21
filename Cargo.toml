@@ -24,7 +24,7 @@ anyhow = "1.0.79"
 clap = { version = "4.4.18", features = ["derive"] }
 clap-verbosity-flag = "2.1.2"
 mini_exercism = { version = "2.1.0", features = ["cli"] }
-reqwest = "0.11.23"
+reqwest = "0.12.0"
 tokio = { version = "1.35.1", features = ["full"] }
 tracing = "0.1.40"
 tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
